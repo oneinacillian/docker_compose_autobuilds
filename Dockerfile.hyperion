@@ -1,0 +1,24 @@
+# Dockerfile
+FROM node:18
+
+ARG ENVIRONMENT
+ARG RABBITMQ_DEFAULT_USER
+ARG RABBITMQ_DEFAULT_PASS
+
+# Install PM2 globally
+RUN npm install -g pm2
+
+# Install Git
+RUN apt-get update && apt-get install -y git vim
+
+# Clone the repository
+RUN git clone -b main https://github.com/eosrio/hyperion-history-api.git /app
+
+# Set the working directory
+WORKDIR /app
+COPY hyperion/$ENVIRONMENT .
+
+# Install dependencies
+RUN npm install
+RUN sed -i "s/\"user\": \"user\"/\"user\": \"$RABBITMQ_DEFAULT_USER\"/" /app/connections.json
+RUN sed -i "s/\"pass\": \"pass\"/\"pass\": \"$RABBITMQ_DEFAULT_PASS\"/" /app/connections.json

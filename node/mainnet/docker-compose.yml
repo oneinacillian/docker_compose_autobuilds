@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+
+  mainnetpeer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mainnetpeer:mainnetpeer
+    container_name: mainnetpeer
+    tty: true
+    ports:
+      - "29876:9876"
+    volumes:
+      - mainnetpeer:/data
+    #entrypoint: ["/entrypoint.sh"]  
+    # entrypoint: ["/bin/sh", "-c", "./start.sh && tail -f stderr.txt"]
+
+volumes:
+  mainnetpeer:
+    external: true

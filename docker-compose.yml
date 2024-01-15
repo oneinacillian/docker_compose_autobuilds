@@ -1,0 +1,170 @@
+version: '3'
+services:
+  es1:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION}
+    container_name: es1
+    environment:
+      - "node.name=es1"
+      - "cluster.name=es-docker-cluster"
+      - "cluster.initial_master_nodes=es1,es2,es3"
+      - "discovery.seed_hosts=es2,es3"
+      - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
+      - "xpack.security.enabled=false"
+      - "xpack.monitoring.collection.enabled=true"
+      - "bootstrap.memory_lock=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - esnet
+
+  es2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION}
+    container_name: es2
+    environment:
+      - "node.name=es2"
+      - "cluster.name=es-docker-cluster"
+      - "cluster.initial_master_nodes=es1,es2,es3"
+      - "discovery.seed_hosts=es1,es3"
+      - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
+      - "xpack.security.enabled=false"
+      - "xpack.monitoring.collection.enabled=true"
+      - "bootstrap.memory_lock=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+
+  es3:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION}
+    container_name: es3
+    environment:
+      - "node.name=es3"
+      - "cluster.name=es-docker-cluster"
+      - "cluster.initial_master_nodes=es1,es2,es3"
+      - "discovery.seed_hosts=es1,es2"
+      - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
+      - "xpack.security.enabled=false"
+      - "xpack.monitoring.collection.enabled=true"
+      - "bootstrap.memory_lock=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata3:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION}
+    container_name: kibana
+    environment:
+      - "ELASTICSEARCH_URL=http://es1:9200"
+      - "ELASTICSEARCH_HOSTS=http://es1:9200"
+    ports:
+      - "5601:5601"
+    depends_on:
+      - es1
+    networks:
+      - esnet
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: "redis:latest"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - esnet
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes --supervised systemd --maxmemory 10gb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - esnet
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  hyperion:
+    container_name: hyperion
+    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile.hyperion
+      args:
+        - ENVIRONMENT=${ENVIRONMENT}     
+        - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+        - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}         
+    ports:
+      - "7000:7000"  # Replace with your desired ports
+      - "1234:1234"
+    networks:
+      - esnet
+    volumes:
+      - hyperiondata:/app/hyperiondata
+    depends_on:
+      - es1  # if your service depends on Elasticsearch
+
+  node:
+    container_name: node
+    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+      args:
+        - ENVIRONMENT=${ENVIRONMENT}
+    ports:
+      - "9876:9876"  # Replace with your desired ports
+      - "8888:8888"
+    networks:
+      - esnet
+    volumes:
+      - node:/app/node
+    depends_on:
+      - es1  # if your service depends on Elasticsearch                
+
+volumes:
+  esdata1:
+  esdata2:
+  esdata3:
+  redisdata:
+  rabbitmqdata:
+  hyperiondata:
+  node:
+
+networks:
+  esnet:

@@ -1,0 +1,9 @@
+FROM ubuntu:20.04
+ARG ENVIRONMENT
+RUN apt-get update && apt-get upgrade && apt-get -y install vim
+WORKDIR /apps/wax
+COPY ./node/$ENVIRONMENT/files .
+#COPY ./snapshot ./snapshots
+RUN apt-get install ./wax-323wax01-hotfix_3.2.3wax01-hotfix-ubuntu-18.04_amd64.deb -y \
+&& chmod +x start.sh \
+&& chmod +x stop.sh
