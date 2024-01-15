@@ -155,7 +155,9 @@ services:
     volumes:
       - node:/app/node
     depends_on:
-      - es1  # if your service depends on Elasticsearch                
+      - es1
+      - es2
+      - es3 # if your service depends on Elasticsearch                
 
 volumes:
   esdata1:
