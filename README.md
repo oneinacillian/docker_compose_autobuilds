@@ -7,6 +7,13 @@ This document provides detailed information about the deployment of our Dockeriz
 - Docker and Docker Compose installed on your machine.
 - Basic understanding of Docker and containerization.
 - Necessary environment variables set for `${ELASTICSEARCH_VERSION}`, `${KIBANA_VERSION}`, `${RABBITMQ_DEFAULT_USER}`, `${RABBITMQ_DEFAULT_PASS}`, `${RABBITMQ_DEFAULT_VHOST}`, and `${ENVIRONMENT}`. Please have a a look at the default.env file as an example and populate your .env.
+- Ensure that you configure vm.max_map_count to at least 262144 for optimal Elasticsearch operation
+
+   ```
+   edit /etc/sysctl.conf
+   add => vm.max_map_count=262144
+   run => sudo sysctl -p
+   ```
 
 ## Services Overview
 1. **Elasticsearch Nodes (es1, es2, es3):** 
