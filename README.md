@@ -77,3 +77,72 @@ ENVIRONMENT=testnet
 3. Ensure that the `.env` file is not committed to version control if it contains sensitive information (add `.env` to your `.gitignore` file).
 
 By configuring these environment variables, the Docker Compose services will automatically use them during the deployment process. This setup ensures easy management and configuration of your services.
+
+## Cleanup Process
+
+We provide a `cleanup.sh` script to help with the clean and efficient removal of Docker resources used by this project. This script is particularly useful when you need to reset your environment or ensure that all resources are properly removed after testing or development.
+
+### Script Contents
+
+The `cleanup.sh` script performs the following actions:
+
+1. **Stop All Services:**
+   - Executes `docker-compose down` to stop all running containers managed by the `docker-compose.yml` file.
+
+2. **Remove Docker Volumes:**
+   - Identifies and removes specific Docker volumes associated with this project. The volumes targeted for removal are:
+     - `node`
+     - `esdata1`
+     - `esdata2`
+     - `esdata3`
+     - `rabbitmqdata`
+     - `redisdata`
+     - `hyperiondata`
+
+### How to Use
+
+1. Ensure that you have necessary permissions to execute the script.
+2. Run the script from the project's root directory: cleanup.sh
+3. The script will automatically stop the Docker Compose services and remove the listed volumes.
+
+### Important Notes
+
+- **Data Loss Warning:** Running this script will permanently delete the listed Docker volumes. Make sure to backup any important data before running the script.
+- **Prerequisites:** This script requires Docker and Docker Compose to be installed and assumes that you are running it from the project's root directory.
+- **Commented Command:** The `docker system prune -a --volumes` command is commented out in the script. You can uncomment this line to remove all unused Docker images, containers, and volumes, but be cautious as this will affect resources beyond this project.
+
+---
+
+This section provides clear instructions and important notes about the `cleanup.sh` script, ensuring that users understand its purpose and the implications of running it. It's important to highlight the potential for data loss to prevent accidental deletion of important data.
+
+## Testing Blockchain Syncing and Hyperion Indexing
+
+We provide a script to facilitate the testing of blockchain syncing and Hyperion indexing. This script ensures the necessary services are started and executes specific tasks within the `node` and `hyperion` containers.
+
+### Script Contents
+
+The script performs the following actions:
+
+1. **Start Node Service:**
+   - Executes `docker exec -d node bash start.sh` to start the blockchain node service in the background.
+2. **Delay Execution:**
+   - Waits for 10 seconds (using `sleep 10`) to allow the node service to initialize properly.
+3. **Start Hyperion Indexing:**
+   - Executes `docker exec -d hyperion bash run.sh wax-indexer` to start the Hyperion indexing process for the blockchain data.
+
+### How to Use
+
+1. Make sure the Docker containers for `node` and `hyperion` are up and running.
+2. Run the script from the project's root directory: /test-runs/testrun.sh
+3. The script will initiate the processes in the respective containers in the background.
+
+### Important Notes
+
+- **Purpose of the Script:** This script is particularly useful for testing and ensuring that the blockchain syncing and Hyperion indexing services are functioning as expected.
+- **Customization:** You may need to modify the script (e.g., the sleep duration or commands) based on your specific environment or testing requirements.
+- **Prerequisites:** This script requires Docker to be installed and assumes that all related containers are correctly set up and configured.
+
+---
+
+This section in your `README.md` provides a clear understanding of what the script does, how to use it, and important considerations. It's structured to guide the user through the process, ensuring they are aware of the purpose and requirements of the script.
+
