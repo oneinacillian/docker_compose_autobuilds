@@ -4,7 +4,7 @@ docker-compose down
 CURRENT_DIR=$(basename "$(pwd)")
 
 # List of volume names you want to remove
-VOLUME_NAMES=("node" "esdata1" "esdata2" "esdata3" "node_modules" "rabbitmqdata" "redisdata" "hyperiondata")
+VOLUME_NAMES=("node" "esdata1" "esdata2" "esdata3" "rabbitmqdata" "redisdata" "hyperiondata")
 
 # Loop through the volume names and remove them
 for VOLUME_NAME in "${VOLUME_NAMES[@]}"; do
