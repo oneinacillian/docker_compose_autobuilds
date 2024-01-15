@@ -17,6 +17,7 @@ This document provides detailed information about the deployment of our Dockeriz
    - Web UI for visualizing and managing Elasticsearch data.
    - Configured to connect to the Elasticsearch cluster.
    - Health check integrated for service availability monitoring.
+   - Also dependent on Elasticsearch (es1).
 3. **Redis:**
    - In-memory data store, used as a database, cache, and message broker.
    - Append-only data persistence and LRU eviction policy.
@@ -27,7 +28,7 @@ This document provides detailed information about the deployment of our Dockeriz
    - Persistent volume for data and configurations.
 5. **Hyperion (Custom Service):**
    - Custom service built with specific Dockerfile and environment settings.
-   - Dependent on Elasticsearch (es1).
+   - Dependent on Elasticsearch (es1,es2,es3).
    - Port and volume configurations as per application requirements.
 6. **Node (Custom Service):**
    - Another custom service with its unique configurations.
