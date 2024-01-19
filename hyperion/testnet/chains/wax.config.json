@@ -94,21 +94,21 @@
       "root_only": false
     },
     "scaling": {
-      "readers": 5,
+      "readers": 1,
       "ds_queues": 1,
-      "ds_threads": 5,
-      "ds_pool_size": 5,
-      "indexing_queues": 5,
-      "ad_idx_queues": 5,
-      "dyn_idx_queues": 5,
-      "max_autoscale": 2,
-      "batch_size": 3000,
-      "resume_trigger": 3000,
-      "auto_scale_trigger": 15000,
-      "block_queue_limit": 75000,
-      "max_queue_limit": 150000,
+      "ds_threads": 1,
+      "ds_pool_size": 1,
+      "indexing_queues": 1,
+      "ad_idx_queues": 1,
+      "dyn_idx_queues": 1,
+      "max_autoscale": 4,
+      "batch_size": 5000,
+      "resume_trigger": 5000,
+      "auto_scale_trigger": 20000,
+      "block_queue_limit": 10000,
+      "max_queue_limit": 100000,
       "routing_mode": "round_robin",
-      "polling_interval": 5000
+      "polling_interval": 10000
     },
     "features": {
       "streaming": {
