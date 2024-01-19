@@ -1,5 +1,5 @@
 DATADIR="/apps/wax"
-NODEOSBINDIR="/usr/opt/wax/323wax01-hotfix-mv/bin"
+NODEOSBINDIR="/usr/opt/wax-leap/404wax01/bin"
 $DATADIR/stop.sh
 echo -e "Starting Nodeos \n";
 
