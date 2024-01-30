@@ -11,7 +11,7 @@ services:
       - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
-      - "bootstrap.memory_lock=true"
+      - "bootstrap.memory_lock=false"
       - "repositories.url.allowed_urls=https://snapshots.oiac.io/downloads/partialsnapshots/"
     ulimits:
       memlock:
@@ -35,7 +35,7 @@ services:
       - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
-      - "bootstrap.memory_lock=true"
+      - "bootstrap.memory_lock=false"
       - "repositories.url.allowed_urls=https://snapshots.oiac.io/downloads/partialsnapshots/"
     ulimits:
       memlock:
@@ -57,7 +57,7 @@ services:
       - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
-      - "bootstrap.memory_lock=true"
+      - "bootstrap.memory_lock=false"
       - "repositories.url.allowed_urls=https://snapshots.oiac.io/downloads/partialsnapshots/"
     ulimits:
       memlock:

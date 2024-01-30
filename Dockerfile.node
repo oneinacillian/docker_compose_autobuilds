@@ -1,9 +1,21 @@
 FROM ubuntu:20.04
 ARG ENVIRONMENT
-RUN apt-get update && apt-get -y upgrade && apt-get -y install vim
+ARG MAX_RETRIES=5
 WORKDIR /apps/wax
 COPY ./node/$ENVIRONMENT/files .
-#COPY ./snapshot ./snapshots
-RUN apt-get install ./wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb -y \
-&& chmod +x start.sh \
-&& chmod +x stop.sh
+RUN apt-get update
+RUN apt-get -y upgrade
+RUN apt-get -y install vim
+RUN set -eux; \
+    retry=0; \
+    until apt-get install ./wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb -y || [ "$retry" -ge $MAX_RETRIES ]; do \
+        retry=$((retry + 1)); \
+        echo "Failed to install wax-leap, retry $retry/$MAX_RETRIES"; \
+        sleep 5; \
+    done; \
+    if [ "$retry" -ge $MAX_RETRIES ]; then \
+        echo "Failed to install wax-leap after $MAX_RETRIES retries"; \
+        exit 1; \
+    fi; \
+    chmod +x start.sh; \
+    chmod +x stop.sh
