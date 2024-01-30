@@ -146,7 +146,9 @@ The script performs the following actions:
 
 ### Important Notes
 
-- **Purpose of the Script:** This script is particularly useful for testing and ensuring that the blockchain syncing and Hyperion indexing services are functioning as expected.
+- **Purpose of the Script:** This script is particularly useful for testing and ensuring that the blockchain syncing and Hyperion indexing services are functioning as expected. <br>
+Keep in mind that the chain config for wax in hyperion is preset to only sync the first 10000 blocks. <br>
+Modify afterwards as you see fit <br>
 - **Customization:** You may need to modify the script (e.g., the sleep duration or commands) based on your specific environment or testing requirements.
 - **Prerequisites:** This script requires Docker to be installed and assumes that all related containers are correctly set up and configured.
 
