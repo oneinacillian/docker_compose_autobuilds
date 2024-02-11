@@ -88,8 +88,8 @@ This document provides detailed information about the deployment of our Dockeriz
    To run Atomic, run command: docker-compose -f ./docker-compose-atomic.yml up -d --build <br>
    The service will run in detached mode
 4. Check the status of all services using `docker-compose ps`.
-5. To bring down the environment, run:
-   docker-compose -f ./docker-compose-atomic.yml down -v to bring down Atomic (-v flag to prune service completely, with the data volumes)
+5. To bring down the environment, run: <br>
+   docker-compose -f ./docker-compose-atomic.yml down -v to bring down Atomic (-v flag to prune service completely, with the data volumes) <br>
    docker-compose -f ./docker-compose-hyperion.yml down -v to bring down Hyperion (-v flag to prune service completely, with the data volumes)
 
 ## Additional Information
