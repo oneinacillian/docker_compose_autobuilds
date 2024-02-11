@@ -135,3 +135,14 @@ By configuring these environment variables, the Docker Compose services will aut
 - **Data Loss Warning:** Running this script will permanently delete the listed Docker volumes. Make sure to backup any important data before running the script.
 - **Prerequisites:** This script requires Docker and Docker Compose to be installed and assumes that you are running it from the project's root directory.
 
+<br>
+<br>
+
+
+| Improvement Made | Area of Impact | Date Implemented | Notes |
+|------------------|----------------|------------------|-------|
+| Use vendor images | Performance/Stability | 2024-02-11 | Applications built on optimized images |
+| Add Atomic deployment | Usability | 2024-02-11 | Quick/Customizable Atomic deployments for use/testing |
+| Customize environment | Usability | 2024-02-11 | Option to auto-launch applications for quick testing |
+
+
