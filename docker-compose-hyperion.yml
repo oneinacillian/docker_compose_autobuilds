@@ -126,12 +126,13 @@ services:
     container_name: hyperion
     tty: true
     build:
-      context: .
+      context: ./hyperion/Deployment
       dockerfile: Dockerfile.hyperion
       args:
-        - ENVIRONMENT=${ENVIRONMENT}     
+        - HYPERION_ENVIRONMENT=${HYPERION_ENVIRONMENT}     
         - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-        - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}         
+        - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+        - HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}         
     ports:
       - "7000:7000"  # Replace with your desired ports
       - "1234:1234"
@@ -140,16 +141,22 @@ services:
     volumes:
       - hyperiondata:/app/hyperiondata
     depends_on:
-      - es1  # if your service depends on Elasticsearch
+      - node
+      - rabbitmq
+      - redis
+      - es1
+      - es2
+      - es3      
 
   node:
     container_name: node
     tty: true
     build:
-      context: .
+      context: ./hyperion/Deployment
       dockerfile: Dockerfile.node
       args:
-        - ENVIRONMENT=${ENVIRONMENT}
+        - HYPERION_ENVIRONMENT=${HYPERION_ENVIRONMENT}
+        - HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
     ports:
       - "9876:9876"  # Replace with your desired ports
       - "8888:8888"

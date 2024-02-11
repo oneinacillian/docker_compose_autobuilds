@@ -1,10 +1,12 @@
 # Dockerfile
 FROM node:18
 
-ARG ENVIRONMENT
+ARG HYPERION_ENVIRONMENT
 ARG RABBITMQ_DEFAULT_USER
 ARG RABBITMQ_DEFAULT_PASS
+ARG HYPERION_LAUNCH_ON_STARTUP
 
+ENV HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
 # Install PM2 globally
 RUN npm install -g pm2
 
@@ -16,9 +18,15 @@ RUN git clone -b main https://github.com/eosrio/hyperion-history-api.git /app
 
 # Set the working directory
 WORKDIR /app
-COPY hyperion/$ENVIRONMENT .
+
+COPY ./$HYPERION_ENVIRONMENT .
+COPY ./entrypoint.sh .
 
 # Install dependencies
 RUN npm install
 RUN sed -i "s/\"user\": \"user\"/\"user\": \"$RABBITMQ_DEFAULT_USER\"/" /app/connections.json
 RUN sed -i "s/\"pass\": \"pass\"/\"pass\": \"$RABBITMQ_DEFAULT_PASS\"/" /app/connections.json
+
+RUN chmod +x ./entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]

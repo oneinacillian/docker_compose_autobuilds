@@ -1,8 +1,16 @@
 FROM ubuntu:20.04
-ARG ENVIRONMENT
+
+ARG HYPERION_ENVIRONMENT
 ARG MAX_RETRIES=5
+ARG HYPERION_LAUNCH_ON_STARTUP
+
+ENV HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
+
 WORKDIR /apps/wax
-COPY ./node/$ENVIRONMENT/files .
+
+COPY ./node/$HYPERION_ENVIRONMENT/files .
+COPY ./node/entrypoint.sh .
+
 RUN apt-get update
 RUN apt-get -y upgrade
 RUN apt-get -y install vim
@@ -19,3 +27,5 @@ RUN set -eux; \
     fi; \
     chmod +x start.sh; \
     chmod +x stop.sh
+
+ENTRYPOINT ["./entrypoint.sh"]    
