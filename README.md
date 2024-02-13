@@ -144,5 +144,6 @@ By configuring these environment variables, the Docker Compose services will aut
 | Use vendor images | Performance/Stability | 2024-02-11 | Applications built on optimized images |
 | Add Atomic deployment | Usability | 2024-02-11 | Quick/Customizable Atomic deployments for use/testing |
 | Customize environment | Usability | 2024-02-11 | Option to auto-launch applications for quick testing |
+| Incorporate dependency checks on services | Usability | 2023-02-13 | Ensure dependent services up before running hyperion / Atomic
 
 
