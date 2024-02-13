@@ -1,6 +1,19 @@
 #!/bin/bash
 set -e
 
+wait_for_service() {
+    echo "Checking availability of $1:$2"
+    timeout 60 bash -c "until echo > /dev/tcp/$1/$2; do sleep 1; done"
+    if [ $? -ne 0 ]; then
+        echo "Service $1:$2 did not become available"
+        exit 1
+    fi
+    echo "$1:$2 is available"
+}
+
+wait_for_service redis 6379
+wait_for_service postgres 5432
+
 # Navigate to the working directory
 cd /app/eosio-contract-api
 
