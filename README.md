@@ -16,8 +16,10 @@ This document provides detailed information about the deployment of our Dockeriz
    HYPERION_ENVIRONMENT=testnet
    HYPERION_LAUNCH_ON_STARTUP=false
 
-   SHIP=172.168.40.50:29876
-   HTTP=172.168.40.50:28888
+   SHIPHOST=172.168.40.50
+   SHIPPORT=29876
+   HTTPHOST=172.168.40.50
+   HTTPPORT=28888
    POSTGRES_USER=waxuser
    POSTGRES_PASSWORD=waxuserpass
    POSTGRES_DB=atomic
@@ -114,8 +116,10 @@ This document provides detailed information about the deployment of our Dockeriz
 
 > Atomic
 
--  `SHIP`: WS connection to your full SHIP
--  `HTTP`: HTTP connection to your full SHIP
+-  `SHIPHOST`: WS connection to your full SHIP
+-  `SHIPPORT`: WS connection to your full SHIP
+-  `HTTPHOST`: HTTP connection to your full SHIP
+-  `HTTPPORT`: HTTP connection to your full SHIP
 -  `POSTGRES_USER`: User for Atomic DB
 -  `POSTGRES_PASSWORD`: User password for Atomic DN
 -  `POSTGRES_DB`: DB to be used for Atomic
