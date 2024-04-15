@@ -149,5 +149,4 @@ By configuring these environment variables, the Docker Compose services will aut
 | Add Atomic deployment | Usability | 2024-02-11 | Quick/Customizable Atomic deployments for use/testing |
 | Customize environment | Usability | 2024-02-11 | Option to auto-launch applications for quick testing |
 | Incorporate dependency checks on services | Usability | 2023-02-13 | Ensure dependent services up before running hyperion / Atomic
-
-
+| Latest version of Elastic verified | Stability | 2024-04-15 | Successfully tested on Hyperion 3.3.9-8
