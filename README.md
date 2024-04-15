@@ -150,3 +150,4 @@ By configuring these environment variables, the Docker Compose services will aut
 | Customize environment | Usability | 2024-02-11 | Option to auto-launch applications for quick testing |
 | Incorporate dependency checks on services | Usability | 2023-02-13 | Ensure dependent services up before running hyperion / Atomic
 | Latest version of Elastic verified | Stability | 2024-04-15 | Successfully tested on Hyperion 3.3.9-8
+| Lock down ports on docker to localhost on Hyperion| Security | 2024-04-15 | In case docker networking and firewalling is not understood

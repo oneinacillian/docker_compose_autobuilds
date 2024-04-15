@@ -20,7 +20,7 @@ services:
     volumes:
       - esdata1:/usr/share/elasticsearch/data
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     networks:
       - esnet
 
@@ -90,7 +90,7 @@ services:
     image: "redis:latest"
     container_name: redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     networks:
       - esnet
     volumes:
@@ -110,8 +110,8 @@ services:
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     networks:
       - esnet
     volumes:
@@ -134,8 +134,8 @@ services:
         - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
         - HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}         
     ports:
-      - "7000:7000"  # Replace with your desired ports
-      - "1234:1234"
+      - "127.0.0.1:7000:7000"  # Replace with your desired ports
+      - "127.0.0.1:1234:1234"
     networks:
       - esnet
     volumes:
@@ -158,8 +158,8 @@ services:
         - HYPERION_ENVIRONMENT=${HYPERION_ENVIRONMENT}
         - HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
     ports:
-      - "9876:9876"  # Replace with your desired ports
-      - "8888:8888"
+      - "127.0.0.1:9876:9876"  # Replace with your desired ports
+      - "127.0.0.1:8888:8888"
     networks:
       - esnet
     volumes:
