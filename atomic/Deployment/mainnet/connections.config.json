@@ -1,0 +1,19 @@
+{
+    "postgres": {
+      "host": "postgresql",
+      "port": 5432,
+      "user": "postgresql_username",
+      "password": "postgresql_password",
+      "database": "postgres_db"
+    },
+    "redis": {
+      "host": "redis",
+      "port": 6379
+    },
+    "chain": {
+      "name": "wax",
+      "chain_id": "1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4",
+      "http": "http://http_address:http_port",
+      "ship": "ws://ship_address:ship_port"
+    }
+  }

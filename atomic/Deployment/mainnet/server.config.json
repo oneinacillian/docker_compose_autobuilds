@@ -1,0 +1,39 @@
+{
+    "provider_name": "oiac.io",
+    "provider_url": "https://oiac.io",
+  
+    "server_addr": "0.0.0.0",
+    "server_name": "atomic-test.oiac.io",
+    "server_port": 9000,
+  
+    "cache_life": 5,
+    "trust_proxy": true,
+  
+    "rate_limit": {
+      "interval": 60,
+      "requests": 240,
+      "bill_execution_time": true
+    },
+  
+    "ip_whitelist": [],
+    "slow_query_threshold": 7500,
+  
+    "max_query_time_ms": 10000,
+    "max_db_connections": 50,
+  
+    "metrics_port": 9010,
+  
+    "namespaces": [
+      {
+        "name": "atomicassets",
+        "path": "/atomicassets",
+        "args": {
+          "atomicassets_account": "atomicassets",
+          "connected_reader": "atomic-1",
+          "socket_features": {
+            "asset_update": false
+          }
+        }
+      }
+    ]
+  }
