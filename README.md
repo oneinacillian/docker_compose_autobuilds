@@ -156,4 +156,4 @@ By configuring these environment variables, the Docker Compose services will aut
 | Lock down ports on docker to localhost on Hyperion| Security | 2024-04-15 | In case docker networking and firewalling is not understood
 | Externalize Hyperion version | Usability | 2024-07-13 | Easily set/upgrade Hyperion versions
 | Externalize Memory parameters for ES | Usability | 2024-07-13 | Easily manage ES memory parameters
-| Latest version of Hyperion (3.3.10-1) verified | Stability | 2024-07-13 - Confirm index operation and health status on API
+| Latest version of Hyperion (3.3.10-1) verified | Stability | 2024-07-13 | Confirm index operation and health status on API
