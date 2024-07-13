@@ -8,7 +8,7 @@ services:
       - "cluster.name=es-docker-cluster"
       - "cluster.initial_master_nodes=es1,es2,es3"
       - "discovery.seed_hosts=es2,es3"
-      - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
+      - "ES_JAVA_OPTS=-Xms${ELASTIC_MIN_MEM} -Xmx${ELASTIC_MAX_MEM}"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
       - "bootstrap.memory_lock=false"
@@ -32,7 +32,7 @@ services:
       - "cluster.name=es-docker-cluster"
       - "cluster.initial_master_nodes=es1,es2,es3"
       - "discovery.seed_hosts=es1,es3"
-      - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
+      - "ES_JAVA_OPTS=-Xms${ELASTIC_MIN_MEM} -Xmx${ELASTIC_MAX_MEM}"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
       - "bootstrap.memory_lock=false"
@@ -54,7 +54,7 @@ services:
       - "cluster.name=es-docker-cluster"
       - "cluster.initial_master_nodes=es1,es2,es3"
       - "discovery.seed_hosts=es1,es2"
-      - "ES_JAVA_OPTS=-Xms20g -Xmx20g"
+      - "ES_JAVA_OPTS=-Xms${ELASTIC_MIN_MEM} -Xmx${ELASTIC_MAX_MEM}"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
       - "bootstrap.memory_lock=false"
@@ -132,7 +132,8 @@ services:
         - HYPERION_ENVIRONMENT=${HYPERION_ENVIRONMENT}     
         - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
         - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
-        - HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}         
+        - HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
+        - HYPERION_VERSION=${HYPERION_VERSION}
     ports:
       - "127.0.0.1:7000:7000"  # Replace with your desired ports
       - "127.0.0.1:1234:1234"

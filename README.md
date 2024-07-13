@@ -112,7 +112,10 @@ This document provides detailed information about the deployment of our Dockeriz
 - `RABBITMQ_DEFAULT_PASS`: The password for the RabbitMQ user.
 - `RABBITMQ_DEFAULT_VHOST`: The default virtual host in RabbitMQ, used for isolation and management of queues.
 - `HYPERION_ENVIRONMENT`: Indicates the environment setting, which can be adjusted based on the deployment stage (e.g., testnet, mainnet).
-- `HYPERION_LAUNCH_ON_STARTUP`:Hyperion startup at launchtime
+- `HYPERION_LAUNCH_ON_STARTUP`: Hyperion startup at launchtime (Ship + Hyperion indexer)
+- `ELASTIC_MAX_MEM`: Configure Elastic Max Memory parameter for es nodes
+- `ELASTIC_MIN_MEM`: Configure Elastic Min Memory parameter for es nodes
+- `HYPERION_VERSION`: Configure Hyperion Version deployment
 
 > Atomic
 
@@ -151,3 +154,6 @@ By configuring these environment variables, the Docker Compose services will aut
 | Incorporate dependency checks on services | Usability | 2023-02-13 | Ensure dependent services up before running hyperion / Atomic
 | Latest version of Elastic verified | Stability | 2024-04-15 | Successfully tested on Hyperion 3.3.9-8
 | Lock down ports on docker to localhost on Hyperion| Security | 2024-04-15 | In case docker networking and firewalling is not understood
+| Externalize Hyperion version | Usability | 2024-07-13 | Easily set/upgrade Hyperion versions
+| Externalize Memory parameters for ES | Usability | 2024-07-13 | Easily manage ES memory parameters
+| Latest version of Hyperion (3.3.10-1) verified | Stability | 2024-07-13 - Confirm index operation and health status on API

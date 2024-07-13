@@ -5,6 +5,7 @@ ARG HYPERION_ENVIRONMENT
 ARG RABBITMQ_DEFAULT_USER
 ARG RABBITMQ_DEFAULT_PASS
 ARG HYPERION_LAUNCH_ON_STARTUP
+ARG HYPERION_VERSION
 
 ENV HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
 # Install PM2 globally
@@ -14,7 +15,7 @@ RUN npm install -g pm2
 RUN apt-get update && apt-get install -y git vim
 
 # Clone the repository
-RUN git clone -b main https://github.com/eosrio/hyperion-history-api.git /app
+RUN git clone -b $HYPERION_VERSION https://github.com/eosrio/hyperion-history-api.git /app
 
 # Set the working directory
 WORKDIR /app
