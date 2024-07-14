@@ -116,6 +116,8 @@ This document provides detailed information about the deployment of our Dockeriz
 - `ELASTIC_MAX_MEM`: Configure Elastic Max Memory parameter for es nodes
 - `ELASTIC_MIN_MEM`: Configure Elastic Min Memory parameter for es nodes
 - `HYPERION_VERSION`: Configure Hyperion Version deployment
+- `LEAP_FILE`: The full path of your nodeos deb file (i.e. https://apt.eossweden.org/wax/pool/stable/w/wax-leap-404wax01/wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb)
+- `LEAP_DEB_FILE`: deb filename to be used for the deployment above (i.e. wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb)
 
 > Atomic
 
@@ -157,3 +159,4 @@ By configuring these environment variables, the Docker Compose services will aut
 | Externalize Hyperion version | Usability | 2024-07-13 | Easily set/upgrade Hyperion versions
 | Externalize Memory parameters for ES | Usability | 2024-07-13 | Easily manage ES memory parameters
 | Latest version of Hyperion (3.3.10-1) verified | Stability | 2024-07-13 | Confirm index operation and health status on API
+| Customize nodeos deployment | Usability | 2024-07-14 | You can now control your nodeos deployment from your .env + smaller git footprint

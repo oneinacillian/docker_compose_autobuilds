@@ -3,6 +3,8 @@ FROM ubuntu:20.04
 ARG HYPERION_ENVIRONMENT
 ARG MAX_RETRIES=5
 ARG HYPERION_LAUNCH_ON_STARTUP
+ARG LEAP_FILE
+ARG LEAP_DEB_FILE
 
 ENV HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
 
@@ -10,13 +12,15 @@ WORKDIR /apps/wax
 
 COPY ./node/$HYPERION_ENVIRONMENT/files .
 COPY ./node/entrypoint.sh .
+COPY ./node/extract_bin_paths.sh /tmp/extract_bin_path.sh
 
 RUN apt-get update
 RUN apt-get -y upgrade
-RUN apt-get -y install vim
+RUN apt-get -y install vim wget
+RUN wget $LEAP_FILE
 RUN set -eux; \
     retry=0; \
-    until apt-get install ./wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb -y || [ "$retry" -ge $MAX_RETRIES ]; do \
+    until apt-get install ./$LEAP_DEB_FILE -y || [ "$retry" -ge $MAX_RETRIES ]; do \
         retry=$((retry + 1)); \
         echo "Failed to install wax-leap, retry $retry/$MAX_RETRIES"; \
         sleep 5; \
@@ -27,5 +31,15 @@ RUN set -eux; \
     fi; \
     chmod +x start.sh; \
     chmod +x stop.sh
+
+
+RUN cp start.sh /tmp/start.sh
+
+# Run the extraction script
+RUN chmod +x /tmp/extract_bin_path.sh && \
+    NODEOSBINDIR=$(/tmp/extract_bin_path.sh /apps/wax/$LEAP_DEB_FILE | grep "NODEOSBINDIR=" | cut -d'=' -f2) && \
+    sed -i "s|^NODEOSBINDIR=.*|NODEOSBINDIR=$NODEOSBINDIR|g" /tmp/start.sh
+
+RUN chmod +x /tmp/start.sh && mv /tmp/start.sh .
 
 ENTRYPOINT ["./entrypoint.sh"]    

@@ -158,6 +158,8 @@ services:
       args:
         - HYPERION_ENVIRONMENT=${HYPERION_ENVIRONMENT}
         - HYPERION_LAUNCH_ON_STARTUP=${HYPERION_LAUNCH_ON_STARTUP}
+        - LEAP_FILE=${LEAP_FILE}
+        - LEAP_DEB_FILE=${LEAP_DEB_FILE}
     ports:
       - "127.0.0.1:9876:9876"  # Replace with your desired ports
       - "127.0.0.1:8888:8888"
