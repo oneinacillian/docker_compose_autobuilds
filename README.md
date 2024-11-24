@@ -180,3 +180,4 @@ By configuring these environment variables, the Docker Compose services will aut
 | Latest version of Hyperion (3.3.10-1) verified | Stability | 2024-07-13 | Confirm index operation and health status on API
 | Customize nodeos deployment | Usability | 2024-07-14 | You can now control your nodeos deployment from your .env + smaller git footprint
 | Enable scripted docker compose | Usability | 2024-11-20 | You can now specify your amount of ES nodes, and your compose will be generated
+| Improve Rabbitmq deployment | Compatibility | 2024-11-20 | Custom config. Hyperion compatibility
