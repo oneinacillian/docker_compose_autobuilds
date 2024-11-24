@@ -86,13 +86,16 @@ This document provides detailed information about the deployment of our Dockeriz
 ## Getting Started
 1. Clone the repository and navigate to the project directory.
 2. Ensure all environment variables are correctly set in your .env file.
-3. To run Hyperion, run command: docker-compose -f ./docker-compose-hyperion.yml up -d --build <br>
-   To run Atomic, run command: docker-compose -f ./docker-compose-atomic.yml up -d --build <br>
+3. To run Hyperion or Atomic, run command: 
+   ```
+   docker-compose -f ./docker-compose-hyperion.yml up -d --build
+   docker-compose -f ./docker-compose-atomic.yml up -d --build
+   ```
    The service will run in detached mode
 4. Check the status of all services using `docker-compose ps`.
 5. To bring down the environment, run:
    ```
-   docker-compose -f ./docker-compose-atomic.yml down -v to bring down Atomic (-v flag to prune service completely, with the data volumes) <br>
+   docker-compose -f ./docker-compose-atomic.yml down -v to bring down Atomic (-v flag to prune service completely, with the data volumes)
    docker-compose -f ./docker-compose-hyperion.yml down -v to bring down Hyperion (-v flag to prune service completely, with the data volumes)
    ```
 6. If you would like to generate your compose for hyperion by specifying a custom ES node configuration, select your amount of ES instances in the .env:
