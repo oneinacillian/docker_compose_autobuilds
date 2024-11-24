@@ -36,12 +36,21 @@ services:
       retries: 3
 
   rabbitmq:
-    image: "rabbitmq:3-management"
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
     container_name: rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=rabbitmquser
       - RABBITMQ_DEFAULT_PASS=rabbitmqpass
       - RABBITMQ_DEFAULT_VHOST=hyperion
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management &&
+        rabbitmq-server  
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
@@ -49,6 +58,8 @@ services:
       - esnet
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 30s
@@ -88,6 +99,8 @@ services:
       args:
         - HYPERION_ENVIRONMENT=testnet
         - HYPERION_LAUNCH_ON_STARTUP=false
+        - LEAP_FILE=https://apt.eossweden.org/wax/pool/stable/w/wax-leap-404wax01/wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb
+        - LEAP_DEB_FILE=wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb
     ports:
       - "127.0.0.1:9876:9876"
       - "127.0.0.1:8888:8888"

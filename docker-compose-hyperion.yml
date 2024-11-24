@@ -103,12 +103,21 @@ services:
       retries: 3
 
   rabbitmq:
-    image: "rabbitmq:3-management"
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
     container_name: rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management &&
+        rabbitmq-server  
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
@@ -116,6 +125,8 @@ services:
       - esnet
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 30s

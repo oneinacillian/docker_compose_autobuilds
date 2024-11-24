@@ -48,7 +48,7 @@
       "enabled": true,
       "node_max_old_space_size": 4096,
       "start_on": 0,
-      "stop_on": 10000,
+      "stop_on": 100000,
       "rewrite": false,
       "purge_queues": false,
       "live_reader": false,

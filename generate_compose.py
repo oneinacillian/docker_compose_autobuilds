@@ -16,6 +16,8 @@ rabbitmq_vhost = os.getenv("RABBITMQ_DEFAULT_VHOST", "hyperion")
 hyperion_environment = os.getenv("HYPERION_ENVIRONMENT", "testnet")
 hyperion_launch_on_startup = os.getenv("HYPERION_LAUNCH_ON_STARTUP", "false")
 hyperion_version = os.getenv("HYPERION_VERSION", "v3.3.10-1")
+leap_file = os.getenv("LEAP_FILE","https://apt.eossweden.org/wax/pool/stable/w/wax-leap-404wax01/wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb")
+leap_deb_file=os.getenv("LEAP_DEB_FILE","wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb")
 
 # Base fixed Docker Compose services
 base_compose = f"""
@@ -56,12 +58,21 @@ services:
       retries: 3
 
   rabbitmq:
-    image: "rabbitmq:3-management"
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
     container_name: rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER={rabbitmq_user}
       - RABBITMQ_DEFAULT_PASS={rabbitmq_pass}
       - RABBITMQ_DEFAULT_VHOST={rabbitmq_vhost}
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management &&
+        rabbitmq-server  
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
@@ -69,6 +80,8 @@ services:
       - esnet
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 30s
@@ -108,6 +121,8 @@ services:
       args:
         - HYPERION_ENVIRONMENT={hyperion_environment}
         - HYPERION_LAUNCH_ON_STARTUP={hyperion_launch_on_startup}
+        - LEAP_FILE={leap_file}
+        - LEAP_DEB_FILE={leap_deb_file}
     ports:
       - "127.0.0.1:9876:9876"
       - "127.0.0.1:8888:8888"

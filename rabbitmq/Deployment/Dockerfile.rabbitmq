@@ -1,0 +1,70 @@
+# Use an official Ubuntu base image
+FROM ubuntu:22.04
+
+# Set environment variables for non-interactive installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package list and install required dependencies
+RUN apt-get update && \
+    apt-get install -y curl gnupg apt-transport-https
+
+# Add Team RabbitMQ's main signing key
+RUN curl -1sLf "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" | \
+    gpg --dearmor | tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null
+
+# Add Cloudsmith: modern Erlang repository signing key
+RUN curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-erlang.E495BB49CC4BBE5B.key" | \
+    gpg --dearmor | tee /usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg > /dev/null
+
+# Add Cloudsmith: RabbitMQ repository signing key
+RUN curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/3.0/cloudsmith.rabbitmq-server.9F4587F226208342.key" | \
+    gpg --dearmor | tee /usr/share/keyrings/rabbitmq.9F4587F226208342.gpg > /dev/null
+
+# Add the RabbitMQ and Erlang repositories to the apt sources list
+RUN echo "## Provides modern Erlang/OTP releases\n\
+deb [signed-by=/usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu jammy main\n\
+deb-src [signed-by=/usr/share/keyrings/rabbitmq.E495BB49CC4BBE5B.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-erlang/deb/ubuntu jammy main\n\
+## Provides RabbitMQ\n\
+deb [signed-by=/usr/share/keyrings/rabbitmq.9F4587F226208342.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-server/deb/ubuntu jammy main\n\
+deb-src [signed-by=/usr/share/keyrings/rabbitmq.9F4587F226208342.gpg] https://ppa1.novemberain.com/rabbitmq/rabbitmq-server/deb/ubuntu jammy main" \
+    | tee /etc/apt/sources.list.d/rabbitmq.list
+
+# Update package list again after adding new repositories
+RUN apt-get update -y
+
+# Install Erlang packages
+RUN apt-get install -y erlang-base \
+    erlang-asn1 erlang-crypto erlang-eldap erlang-ftp erlang-inets \
+    erlang-mnesia erlang-os-mon erlang-parsetools erlang-public-key \
+    erlang-runtime-tools erlang-snmp erlang-ssl \
+    erlang-syntax-tools erlang-tftp erlang-tools erlang-xmerl
+
+# Install RabbitMQ server
+RUN apt-get install -y rabbitmq-server --fix-missing
+
+# Set the Erlang cookie content
+#RUN echo "RANDOM_COOKIE_STRING_HERE" > /var/lib/rabbitmq/.erlang.cookie && \
+#    chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie && \
+#    chmod 400 /var/lib/rabbitmq/.erlang.cookie
+
+# Fix ownership for /var/lib/rabbitmq directory
+RUN chown -R rabbitmq:rabbitmq /var/lib/rabbitmq
+
+# Set the Erlang cookie content
+#RUN echo "880461d8f8bec6a39a08" > /var/lib/rabbitmq/.erlang.cookie && \
+#    chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie && \
+#    chmod 400 /var/lib/rabbitmq/.erlang.cookie
+
+RUN rabbitmq-plugins enable rabbitmq_management
+
+# Expose RabbitMQ ports
+EXPOSE 5672 15672
+
+# Healthcheck for RabbitMQ
+HEALTHCHECK CMD rabbitmqctl status || exit 1
+
+# Start RabbitMQ server
+CMD ["rabbitmq-server"]
+
+# Check RabbitMQ version (optional)
+RUN rabbitmqctl version
