@@ -90,9 +90,24 @@ This document provides detailed information about the deployment of our Dockeriz
    To run Atomic, run command: docker-compose -f ./docker-compose-atomic.yml up -d --build <br>
    The service will run in detached mode
 4. Check the status of all services using `docker-compose ps`.
-5. To bring down the environment, run: <br>
+5. To bring down the environment, run:
+   ```
    docker-compose -f ./docker-compose-atomic.yml down -v to bring down Atomic (-v flag to prune service completely, with the data volumes) <br>
    docker-compose -f ./docker-compose-hyperion.yml down -v to bring down Hyperion (-v flag to prune service completely, with the data volumes)
+   ```
+6. If you would like to generate your compose for hyperion by specifying a custom ES node configuration, select your amount of ES instances in the .env:
+   ```
+   AMOUNT_OF_NODE_INSTANCES=2
+   ```
+   Then run the following to generate the compose
+   ```
+   python3 generate_compose.py
+   ```
+   The start the solution using the generated compose (the compose filename being generated will be docker-compose-generated.yml )
+   ```
+   docker compose -f docker-compose-generated.yml up -d
+   ```
+
 
 ## Additional Information
 - **Configuration Adjustments:** Make any necessary changes to the `.yml` and `.json` files to suit your environment.
@@ -118,6 +133,7 @@ This document provides detailed information about the deployment of our Dockeriz
 - `HYPERION_VERSION`: Configure Hyperion Version deployment
 - `LEAP_FILE`: The full path of your nodeos deb file (i.e. https://apt.eossweden.org/wax/pool/stable/w/wax-leap-404wax01/wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb)
 - `LEAP_DEB_FILE`: deb filename to be used for the deployment above (i.e. wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb)
+- `AMOUNT_OF_NODE_INSTANCES`: The amount of ES instances you would like to have part of your Elasticsearch solution
 
 > Atomic
 
@@ -160,3 +176,4 @@ By configuring these environment variables, the Docker Compose services will aut
 | Externalize Memory parameters for ES | Usability | 2024-07-13 | Easily manage ES memory parameters
 | Latest version of Hyperion (3.3.10-1) verified | Stability | 2024-07-13 | Confirm index operation and health status on API
 | Customize nodeos deployment | Usability | 2024-07-14 | You can now control your nodeos deployment from your .env + smaller git footprint
+| Enable scripted docker compose | Usability | 2024-11-20 | You can now specify your amount of ES nodes, and your compose will be generated
