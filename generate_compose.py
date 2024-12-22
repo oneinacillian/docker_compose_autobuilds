@@ -18,6 +18,8 @@ hyperion_launch_on_startup = os.getenv("HYPERION_LAUNCH_ON_STARTUP", "false")
 hyperion_version = os.getenv("HYPERION_VERSION", "v3.3.10-1")
 leap_file = os.getenv("LEAP_FILE","https://apt.eossweden.org/wax/pool/stable/w/wax-leap-404wax01/wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb")
 leap_deb_file=os.getenv("LEAP_DEB_FILE","wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb")
+gf_username=os.getenv("GF_USERNAME","admin")
+gf_password=os.getenv("GF_PASSWORD","admin123")
 
 # Base fixed Docker Compose services
 base_compose = f"""
@@ -57,6 +59,18 @@ services:
       timeout: 5s
       retries: 3
 
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - esnet
+    depends_on:
+      - redis      
+
   rabbitmq:
     build:
       context: ./rabbitmq/Deployment
@@ -71,11 +85,12 @@ services:
       - -c
       - |
         rabbitmq-plugins disable --all &&
-        rabbitmq-plugins enable rabbitmq_management &&
+        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
         rabbitmq-server  
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
+      - "127.0.0.1:15692:15692"
     networks:
       - esnet
     volumes:
@@ -101,8 +116,8 @@ services:
         - RABBITMQ_DEFAULT_USER={rabbitmq_user}
         - RABBITMQ_DEFAULT_PASS={rabbitmq_pass}
     ports:
-      - "127.0.0.1:7000:7000"
-      - "127.0.0.1:1234:1234"
+      - "7000:7000"
+      - "1234:1234"
     networks:
       - esnet
     volumes:
@@ -130,6 +145,44 @@ services:
       - esnet
     volumes:
       - node:/app/node/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - esnet
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3030:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER={gf_username}
+      - GF_SECURITY_ADMIN_PASSWORD={gf_password}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    networks:
+      - esnet
+
+  nodeos-custom-exporter:
+    build:
+      context: ./custom-nodeos-exporter
+      dockerfile: Dockerfile
+    container_name: nodeos-custom-exporter
+    ports:
+      - "8000:8000"
+    depends_on:
+      - node
+    networks:
+      - esnet       
 """
 
 # Template for Elasticsearch nodes
@@ -162,6 +215,7 @@ volumes:
   redisdata:
   rabbitmqdata:
   hyperiondata:
+  grafana-data:
   node:
 {volumes}
 
