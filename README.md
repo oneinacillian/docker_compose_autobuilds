@@ -181,3 +181,7 @@ By configuring these environment variables, the Docker Compose services will aut
 | Customize nodeos deployment | Usability | 2024-07-14 | You can now control your nodeos deployment from your .env + smaller git footprint
 | Enable scripted docker compose | Usability | 2024-11-20 | You can now specify your amount of ES nodes, and your compose will be generated
 | Improve Rabbitmq deployment | Compatibility | 2024-11-20 | Custom config. Hyperion compatibility
+| Enable monitoring stack | Capability | 2024-12-22 | Prometheus + Grafana as part of generated compose
+| Custom managed Dashboard for nodeos monitoring | Capability | 2024-12-22 | Interrogate get_info endpoint to store metrics
+| Custom managed monitoring capability for RabbitMQ and Redis | Capability | 2024-12-22 | Basic monitoring counters
+| Test stack using wax-leap-503wax01 | Compatibility | 2024-12-22 | Feature testing
