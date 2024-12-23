@@ -60,6 +60,14 @@ This document provides detailed information about the deployment of our Dockeriz
 6. **Node (Custom Service):**
    - Another custom service with its unique configurations.
    - Also dependent on Elasticsearch (es1).
+7. **Grafana:**
+   - Included managed dashboards
+8. **Prometheus:**
+   - Externalized prometheus yml for easy customisation
+9. **Custom Exporters:**
+   - Nodeos
+   - RabbitMQ
+   - Redis
 
 ## Services Overview (Atomic)
 1. **Redis:**
@@ -137,6 +145,8 @@ This document provides detailed information about the deployment of our Dockeriz
 - `LEAP_FILE`: The full path of your nodeos deb file (i.e. https://apt.eossweden.org/wax/pool/stable/w/wax-leap-404wax01/wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb)
 - `LEAP_DEB_FILE`: deb filename to be used for the deployment above (i.e. wax-leap-404wax01_4.0.4wax01-ubuntu-18.04_amd64.deb)
 - `AMOUNT_OF_NODE_INSTANCES`: The amount of ES instances you would like to have part of your Elasticsearch solution
+- `GF_USERNAME`: Grafana username
+- `GF_PASSWORD`: Grafana password
 
 > Atomic
 
