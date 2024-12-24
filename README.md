@@ -46,13 +46,17 @@ sudo sysctl -p
 
 ```env
 # Hyperion Settings
-ELASTICSEARCH_VERSION=8.11.4
-KIBANA_VERSION=8.11.4
+ELASTICSEARCH_VERSION=8.13.2
+KIBANA_VERSION=8.13.2
 RABBITMQ_DEFAULT_USER=rabbitmquser
 RABBITMQ_DEFAULT_PASS=rabbitmqpass
 RABBITMQ_DEFAULT_VHOST=hyperion
 HYPERION_ENVIRONMENT=testnet
 HYPERION_LAUNCH_ON_STARTUP=false
+HYPERION_VERSION=3.5.0
+ELASTIC_MAX_MEM=15g
+ELASTIC_MIN_MEM=15g
+AMOUNT_OF_NODE_INSTANCES=2
 
 # Atomic Settings
 SHIPHOST=172.168.40.50
@@ -64,6 +68,10 @@ POSTGRES_PASSWORD=waxuserpass
 POSTGRES_DB=atomic
 ATOMIC_ENVIRONMENT=testnet
 ATOMIC_LAUNCH_ON_STARTUP=true
+
+# Leap variables for Hyperion
+LEAP_FILE=https://apt.eossweden.org/wax/pool/stable/w/wax-leap-503wax01/wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb
+LEAP_DEB_FILE=wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb
 ```
 </details>
 
@@ -152,4 +160,31 @@ docker compose -f docker-compose-generated-hyperion.yml down -v  # Hyperion
 - `POSTGRES_*`: Database configuration
 - [View all Atomic variables...](#)
 
+### Leap Variables for Hyperion
+- `LEAP_FILE`: Leap deb file
+- `LEAP_DEB_FILE`: Leap deb file
+- [View all Leap variables...](#)
+
 </details>
+
+<details>
+<summary><b>Network Configuration</b></summary>
+
+```env
+# Mainnet setup
+HYPERION_ENVIRONMENT=mainnet
+ATOMIC_ENVIRONMENT=mainnet
+
+# Testnet setup
+HYPERION_ENVIRONMENT=testnet
+ATOMIC_ENVIRONMENT=testnet
+```
+</details>
+
+### Security Considerations
+
+- Always change default passwords in production
+- Use strong passwords for database and admin accounts
+- Consider using environment-specific `.env` files
+- Backup your `.env` file securely
+- Don't commit `.env` files to version control
