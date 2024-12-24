@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: redis
+    scrape_interval: 1s
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+  - job_name: rabbitmq
+    scrape_interval: 1s
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+    basic_auth:
+      username: rabbitmquser
+      password: rabbitmqpass
+  - job_name: grafana
+    static_configs:
+      - targets: ["grafana:3000"]
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+  # - job_name: nodeos_exporter
+  #   static_configs:
+  #     - targets: ["nodeos-exporter:9898"]
+  - job_name: nodeos_custom_exporter
+    scrape_interval: 1s
+    static_configs:
+      - targets: ["nodeos-custom-exporter:8000"]      

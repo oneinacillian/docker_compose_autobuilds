@@ -1,3 +1,5 @@
 ./
 snapshot-*
 backup/*
+cursor.txt
+docker_compose_autobuilds.code-workspace

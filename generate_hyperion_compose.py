@@ -152,7 +152,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/hyperion/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
@@ -167,7 +167,7 @@ services:
       - GF_SECURITY_ADMIN_USER={gf_username}
       - GF_SECURITY_ADMIN_PASSWORD={gf_password}
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/provisioning/hyperion:/etc/grafana/provisioning
       - grafana-data:/var/lib/grafana
     networks:
       - esnet
@@ -245,7 +245,7 @@ volumes = "\n".join([f"  esdata{i}:" for i in range(1, amount_of_nodes + 1)])
 final_compose = base_compose + services + volumes_and_networks.format(volumes=volumes)
 
 # Write to docker-compose.yml
-with open("docker-compose-generated.yml", "w") as f:
+with open("docker-compose-generated-hyperion.yml", "w") as f:
     f.write(final_compose)
 
-print(f"Generated docker-compose.yml with {amount_of_nodes} Elasticsearch nodes.")
+print(f"Generated docker-compose-generated-hyperion.yml with {amount_of_nodes} Elasticsearch nodes.")
