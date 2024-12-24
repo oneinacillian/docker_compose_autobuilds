@@ -193,5 +193,8 @@ By configuring these environment variables, the Docker Compose services will aut
 | Improve Rabbitmq deployment | Compatibility | 2024-11-20 | Custom config. Hyperion compatibility
 | Enable monitoring stack | Capability | 2024-12-22 | Prometheus + Grafana as part of generated compose
 | Custom managed Dashboard for nodeos monitoring | Capability | 2024-12-22 | Interrogate get_info endpoint to store metrics
-| Custom managed monitoring capability for RabbitMQ and Redis | Capability | 2024-12-22 | Basic monitoring counters
+| Custom managed monitoring capability for RabbitMQ and Redis | Capability | 2024-12-22 | Basic Hyperion monitoring counters
 | Test stack using wax-leap-503wax01 | Compatibility | 2024-12-22 | Feature testing
+| Add Atomic monitoring | Capability | 2024-12-23 | Added postgres-exporter metrics collection |
+| Add Atomic monitoring | Capability | 2024-12-23 | Added redis-exporter metrics collection |
+| Custom managed monitoring capability for Postgres and Redis | Capability | 2024-12-23 | Basic Atomic monitoring counters
