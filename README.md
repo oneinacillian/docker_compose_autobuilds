@@ -125,8 +125,9 @@ docker compose -f docker-compose-generated-hyperion.yml down -v  # Hyperion
 
 | Date | Improvement | Impact |
 |------|------------|---------|
-| 2024-12-23 | Added Atomic monitoring (Postgres/Redis) | Monitoring |
-| 2024-12-22 | Custom managed dashboards for nodeos | Monitoring |
+| 2024-12-23 | Added Atomic monitoring (Postgres/Redis) + managed Grafana dashboards | Monitoring |
+| 2024-12-23 | Added Hyperion monitoring (RabbitMQ/Redis) + managed Grafana dashboards | Monitoring |
+| 2024-12-22 | Custom built exporters for nodeos + managed Grafana dashboards | Monitoring |
 | 2024-11-20 | Scripted docker compose generation | Usability |
 | 2024-07-14 | Customizable nodeos deployment | Flexibility |
 | 2024-07-13 | Hyperion 3.3.10-1 verification | Stability |
