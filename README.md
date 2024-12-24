@@ -90,6 +90,13 @@ This document provides detailed information about the deployment of our Dockeriz
    - Custom service built with specific Dockerfile and environment settings.
    - Dependent on Elasticsearch (postgres, redis).
    - Port and volume configurations as per application requirements.
+4. **Grafana:**
+   - Included managed dashboards
+5. **Prometheus:**
+   - Externalized prometheus yml for easy customisation
+6. **Custom Exporters:**
+   - Postgresql
+   - Redis   
 
 ## Getting Started
 1. Clone the repository and navigate to the project directory.
