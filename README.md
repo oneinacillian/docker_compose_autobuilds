@@ -6,14 +6,30 @@
 
 1. Clone and navigate to the project
 2. Configure your `.env` file (see [Environment Setup](#-environment-setup))
-3. Run the desired service:
+3. Run the Python script to generate the docker compose files:
+```bash
+# Generate Hyperion compose file            
+python3 generate_hyperion_compose.py
+
+# Generate Atomic compose file
+python3 generate_atomic_compose.py
+```
+4. Run the desired service:
 ```bash
 # For Hyperion
-docker-compose -f ./docker-compose-hyperion.yml up -d --build
+docker-compose -f ./docker-compose-generated-hyperion.yml up -d --build
 
 # For Atomic
-docker-compose -f ./docker-compose-atomic.yml up -d --build
+docker-compose -f ./docker-compose-generated-atomic.yml up -d --build
 ```
+5. Stop the services:
+```bash
+# For Hyperion
+docker-compose -f ./docker-compose-generated-hyperion.yml down
+
+# For Atomic
+docker-compose -f ./docker-compose-generated-atomic.yml down
+``` 
 
 ## 📋 Services Overview
 
@@ -97,25 +113,6 @@ LEAP_DEB_FILE=wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb
 ```bash
 # Set desired node count in .env
 AMOUNT_OF_NODE_INSTANCES=2
-
-# Generate compose file for hyperion
-python3 generate_hyperion_compose.py
-
-# Generate compose file for atomic
-python3 generate_atomic_compose.py
-
-# Launch hyperion with generated compose
-docker compose -f docker-compose-generated-hyperion.yml up -d
-
-# Launch atomic with generated compose
-docker compose -f docker-compose-generated-atomic.yml up -d
-```
-
-### Cleanup
-```bash
-# Remove services with volumes
-docker compose -f docker-compose-generated-atomic.yml down -v    # Atomic
-docker compose -f docker-compose-generated-hyperion.yml down -v  # Hyperion
 ```
 
 ## 📈 Recent Improvements
