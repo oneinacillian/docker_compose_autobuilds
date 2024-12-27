@@ -119,6 +119,17 @@ GF_PASSWORD=admin123
 AMOUNT_OF_NODE_INSTANCES=2
 ```
 
+### PostgreSQL Optimizations
+The PostgreSQL instance is automatically configured with performance optimizations based on the host system's resources:
+
+- **shared_buffers**: Set to 25% of total system memory
+- **work_mem**: Calculated based on max_connections and available memory
+- **maintenance_work_mem**: Set to 5% of total system memory
+- **effective_cache_size**: Set to 50% of total system memory
+- **Extensions**: Automatically enables pg_trgm for improved text search capabilities
+
+These optimizations are handled automatically during container initialization through the init-db.sh script.
+
 ## 📈 Recent Improvements
 
 <details>
