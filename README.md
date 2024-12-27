@@ -154,17 +154,22 @@ docker compose -f docker-compose-generated-hyperion.yml down -v  # Hyperion
 - `KIBANA_VERSION`: Kibana version
 - `HYPERION_VERSION`: Hyperion version
 - `ELASTIC_MAX_MEM`/`ELASTIC_MIN_MEM`: ES memory limits
-- [View all Hyperion variables...](#)
+- `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS`/`RABBITMQ_DEFAULT_VHOST`: RabbitMQ credentials
+- `HYPERION_ENVIRONMENT`: Hyperion environment
+- `HYPERION_LAUNCH_ON_STARTUP`: Launch Hyperion on startup
+- `AMOUNT_OF_NODE_INSTANCES`: Amount of nodeos instances
 
 ### Atomic Variables
 - `SHIPHOST`/`SHIPPORT`: SHIP connection details
-- `POSTGRES_*`: Database configuration
-- [View all Atomic variables...](#)
+- `ATOMIC_ENVIRONMENT`: Atomic environment
+- `ATOMIC_LAUNCH_ON_STARTUP`: Launch Atomic on startup
+- `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`: Database credentials
+- `SHIPHOST`/`SHIPPORT`: SHIP connection details
+- `HTTPHOST`/`HTTPPORT`: Atomic API connection details
 
 ### Leap Variables for Hyperion
 - `LEAP_FILE`: Leap deb file
 - `LEAP_DEB_FILE`: Leap deb file
-- [View all Leap variables...](#)
 
 </details>
 
