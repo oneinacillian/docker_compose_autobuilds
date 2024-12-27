@@ -151,26 +151,30 @@ AMOUNT_OF_NODE_INSTANCES=2
 <summary><b>Environment Variables Reference</b></summary>
 
 ### Hyperion Variables
-- `ELASTICSEARCH_VERSION`: Elasticsearch version
-- `KIBANA_VERSION`: Kibana version
-- `HYPERION_VERSION`: Hyperion version
+- `ELASTICSEARCH_VERSION`: Specifies the version of Elasticsearch to be used in the services
+- `KIBANA_VERSION`: Defines the version of Kibana for compatibility with Elasticsearch
+- `HYPERION_VERSION`: Configure Hyperion Version deployment
 - `ELASTIC_MAX_MEM`/`ELASTIC_MIN_MEM`: ES memory limits
-- `RABBITMQ_DEFAULT_USER`/`RABBITMQ_DEFAULT_PASS`/`RABBITMQ_DEFAULT_VHOST`: RabbitMQ credentials
+- `RABBITMQ_DEFAULT_USER`: The default username for RabbitMQ access
+- `RABBITMQ_DEFAULT_PASS`: The default password for RabbitMQ access
+- `RABBITMQ_DEFAULT_VHOST`: The default virtual host in RabbitMQ, used for isolation and management of queues
 - `HYPERION_ENVIRONMENT`: Hyperion environment
-- `HYPERION_LAUNCH_ON_STARTUP`: Launch Hyperion on startup
-- `AMOUNT_OF_NODE_INSTANCES`: Amount of nodeos instances
+- `HYPERION_LAUNCH_ON_STARTUP`: Hyperion startup at launchtime (Ship + Hyperion indexer)
+- `AMOUNT_OF_NODE_INSTANCES`: The amount of ES instances you would like to have part of your Elasticsearch solution
 
 ### Atomic Variables
-- `SHIPHOST`/`SHIPPORT`: SHIP connection details
-- `ATOMIC_ENVIRONMENT`: Atomic environment
-- `ATOMIC_LAUNCH_ON_STARTUP`: Launch Atomic on startup
-- `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`: Database credentials
-- `SHIPHOST`/`SHIPPORT`: SHIP connection details
-- `HTTPHOST`/`HTTPPORT`: Atomic API connection details
+-  `SHIPHOST`: WS connection to your full SHIP
+-  `SHIPPORT`: WS port to your full SHIP
+-  `HTTPHOST`: HTTP connection to your full SHIP
+-  `HTTPPORT`: HTTP port to your full SHIP
+-  `POSTGRES_USER`: User for Atomic DB
+-  `POSTGRES_PASSWORD`: User password for Atomic DN
+-  `POSTGRES_DB`: DB to be used for Atomic
+-  `ATOMIC_LAUNCH_ON_STARTUP`: Atomic startup at launchtime
 
 ### Leap Variables for Hyperion
-- `LEAP_FILE`: Leap deb file
-- `LEAP_DEB_FILE`: Leap deb file
+- `LEAP_FILE`: The full path of your nodeos deb file (i.e. https://apt.eossweden.org/wax/pool/stable/w/wax-leap-503wax01/wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb)
+- `LEAP_DEB_FILE`: deb filename to be used for the deployment above (i.e. wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb)
 
 ### Grafana Variables
 - `GF_USERNAME`: Grafana username
