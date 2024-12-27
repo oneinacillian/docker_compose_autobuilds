@@ -88,6 +88,10 @@ ATOMIC_LAUNCH_ON_STARTUP=true
 # Leap variables for Hyperion
 LEAP_FILE=https://apt.eossweden.org/wax/pool/stable/w/wax-leap-503wax01/wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb
 LEAP_DEB_FILE=wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb
+
+# Grafana settings
+GF_USERNAME=admin
+GF_PASSWORD=admin123
 ```
 </details>
 
@@ -167,6 +171,10 @@ AMOUNT_OF_NODE_INSTANCES=2
 ### Leap Variables for Hyperion
 - `LEAP_FILE`: Leap deb file
 - `LEAP_DEB_FILE`: Leap deb file
+
+### Grafana Variables
+- `GF_USERNAME`: Grafana username
+- `GF_PASSWORD`: Grafana password
 
 </details>
 
