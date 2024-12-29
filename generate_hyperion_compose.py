@@ -21,6 +21,30 @@ leap_deb_file=os.getenv("LEAP_DEB_FILE","wax-leap-404wax01_4.0.4wax01-ubuntu-18.
 gf_username=os.getenv("GF_USERNAME","admin")
 gf_password=os.getenv("GF_PASSWORD","admin123")
 
+# Before the base_compose definition, add this helper function
+def generate_es_uri(node_count):
+    uris = [f'http://es{i}:9200' for i in range(1, node_count + 1)]
+    return ','.join(uris)
+
+def generate_es_exporters(node_count):
+    exporters = ""
+    for i in range(1, node_count + 1):
+        exporter = f"""
+  elasticsearch-exporter-{i}:
+    image: quay.io/prometheuscommunity/elasticsearch-exporter:latest
+    container_name: elasticsearch-exporter-{i}
+    command:
+      - '--es.uri=http://es{i}:9200'
+    ports:
+      - "{9114 + i - 1}:9114"
+    depends_on:
+      - es{i}
+    networks:
+      - esnet
+"""
+        exporters += exporter
+    return exporters
+
 # Base fixed Docker Compose services
 base_compose = f"""
 version: '3'
@@ -182,7 +206,7 @@ services:
     depends_on:
       - node
     networks:
-      - esnet       
+      - esnet
 """
 
 # Template for Elasticsearch nodes
@@ -241,11 +265,59 @@ for i in range(1, amount_of_nodes + 1):
 # Generate volumes for Elasticsearch
 volumes = "\n".join([f"  esdata{i}:" for i in range(1, amount_of_nodes + 1)])
 
-# Combine everything
-final_compose = base_compose + services + volumes_and_networks.format(volumes=volumes)
+# Combine everything - update this section at the end of the file
+# Remove the elasticsearch exporters from base_compose if it exists
+base_compose = base_compose.replace("""  elasticsearch-exporter:
+    build:
+      context: ./elasticsearch_exporter
+      dockerfile: Dockerfile
+    container_name: elasticsearch-exporter
+    command:
+      - "--es.uri={generate_es_uri(amount_of_nodes)}"
+    ports:
+      - "9114:9114"
+    depends_on:
+      - es1
+    networks:
+      - esnet""", "")
+
+# Generate all services first, then volumes and networks
+all_services = base_compose + services + generate_es_exporters(amount_of_nodes)
+
+# Combine services with volumes and networks
+final_compose = all_services + volumes_and_networks.format(volumes=volumes)
 
 # Write to docker-compose.yml
 with open("docker-compose-generated-hyperion.yml", "w") as f:
     f.write(final_compose)
 
 print(f"Generated docker-compose-generated-hyperion.yml with {amount_of_nodes} Elasticsearch nodes.")
+
+def update_prometheus_config(node_count):
+    # Read the existing prometheus.yml
+    with open("prometheus/hyperion/prometheus.yml", "r") as f:
+        config = f.read()
+
+    # Find and replace the elasticsearch_exporter job
+    old_es_job = """  - job_name: elasticsearch_exporter
+    scrape_interval: 1s
+    static_configs:
+      - targets: ["elasticsearch-exporter-1:9114"]"""
+
+    # Generate new targets list based on node count
+    targets = '", "'.join([f'elasticsearch-exporter-{i}:9114' for i in range(1, node_count + 1)])
+    new_es_job = f"""  - job_name: elasticsearch_exporter
+    scrape_interval: 1s
+    static_configs:
+      - targets: ["{targets}"]"""
+
+    # Replace the old job configuration with the new one
+    updated_config = config.replace(old_es_job, new_es_job)
+
+    # Write the updated configuration back to the file
+    with open("prometheus/hyperion/prometheus.yml", "w") as f:
+        f.write(updated_config)
+
+# Add this line at the end of the script, after writing the docker-compose file
+update_prometheus_config(amount_of_nodes)
+print(f"Updated prometheus.yml with {amount_of_nodes} elasticsearch-exporter targets.")
