@@ -296,27 +296,46 @@ print(f"Generated docker-compose-generated-hyperion.yml with {amount_of_nodes} E
 def update_prometheus_config(node_count):
     # Read the existing prometheus.yml
     with open("prometheus/hyperion/prometheus.yml", "r") as f:
-        config = f.read()
+        config = f.readlines()
 
-    # Find and replace the elasticsearch_exporter job
-    old_es_job = """  - job_name: elasticsearch_exporter
-    scrape_interval: 1s
-    static_configs:
-      - targets: ["elasticsearch-exporter-1:9114"]"""
-
-    # Generate new targets list based on node count
-    targets = '", "'.join([f'elasticsearch-exporter-{i}:9114' for i in range(1, node_count + 1)])
+    # Generate new elasticsearch_exporter job configuration
     new_es_job = f"""  - job_name: elasticsearch_exporter
     scrape_interval: 1s
     static_configs:
-      - targets: ["{targets}"]"""
+      - targets: {[f'elasticsearch-exporter-{i}:9114' for i in range(1, node_count + 1)]}\n"""
 
-    # Replace the old job configuration with the new one
-    updated_config = config.replace(old_es_job, new_es_job)
+    # Remove any existing elasticsearch_exporter job
+    new_config = []
+    skip_section = False
+    for line in config:
+        if 'job_name: elasticsearch_exporter' in line:
+            skip_section = True
+            continue
+        if skip_section:
+            if line.strip().startswith('- job_name:'):
+                skip_section = False
+            else:
+                continue
+        if not skip_section:
+            new_config.append(line)
+
+    # Find the position to insert the new job (before the last job)
+    insert_position = None
+    for i, line in enumerate(new_config):
+        if 'job_name: nodeos_custom_exporter' in line:
+            insert_position = i
+            break
+
+    if insert_position is not None:
+        # Insert the new elasticsearch_exporter job configuration
+        new_config.insert(insert_position, new_es_job)
+    else:
+        # If we didn't find the position, append to the end of scrape_configs
+        new_config.append(new_es_job)
 
     # Write the updated configuration back to the file
     with open("prometheus/hyperion/prometheus.yml", "w") as f:
-        f.write(updated_config)
+        f.writelines(new_config)
 
 # Add this line at the end of the script, after writing the docker-compose file
 update_prometheus_config(amount_of_nodes)
