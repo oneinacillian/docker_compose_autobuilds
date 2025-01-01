@@ -4,6 +4,11 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Add these new environment variables
+es_heap_dump_path = os.getenv("ES_HEAP_DUMP_PATH", "/var/log/elasticsearch")
+es_gc_log_path = os.getenv("ES_GC_LOG_PATH", "/var/log/elasticsearch")
+es_java_opts = os.getenv("ES_JAVA_OPTS", "-XX:+HeapDumpOnOutOfMemoryError")
+
 # Load the number of nodes and other configurations from the environment
 amount_of_nodes = int(os.getenv("AMOUNT_OF_NODE_INSTANCES", 1))
 elasticsearch_version = os.getenv("ELASTICSEARCH_VERSION", "8.13.2")
@@ -219,7 +224,9 @@ node_template = """
       - "cluster.name=es-docker-cluster"
       - "cluster.initial_master_nodes={initial_master_nodes}"
       - "discovery.seed_hosts={seed_hosts}"
-      - "ES_JAVA_OPTS=-Xms{min_mem} -Xmx{max_mem}"
+      - "ES_JAVA_OPTS=-Xms{min_mem} -Xmx{max_mem} {es_java_opts}"
+      - "ES_HEAP_DUMP_PATH={es_heap_dump_path}"
+      - "ES_GC_LOG_PATH={es_gc_log_path}"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
       - "bootstrap.memory_lock=false"
@@ -231,6 +238,12 @@ node_template = """
       - esdata{index}:/usr/share/elasticsearch/data
     networks:
       - esnet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq \\"status\\":\\"red\\""]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 """
 
 # Base for volumes and networks
@@ -259,7 +272,10 @@ for i in range(1, amount_of_nodes + 1):
         initial_master_nodes=initial_master_nodes,
         seed_hosts=seed_hosts,
         min_mem=elastic_min_mem,
-        max_mem=elastic_max_mem
+        max_mem=elastic_max_mem,
+        es_java_opts=es_java_opts,
+        es_heap_dump_path=es_heap_dump_path,
+        es_gc_log_path=es_gc_log_path
     )
 
 # Generate volumes for Elasticsearch

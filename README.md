@@ -148,6 +148,8 @@ These optimizations are handled automatically during container initialization th
 
 | Date | Improvement | Impact |
 |------|------------|---------|
+| 2025-01-01 | Added healthcheck to Elasticsearch | Monitoring |
+| 2025-01-01 | Added ES heap dump and GC logging configuration | Debugging |
 | 2024-12-24 | Added dynamic Prometheus configuration for ES exporters | Monitoring |
 | 2024-12-23 | Added Atomic monitoring (Postgres/Redis) + managed Grafana dashboards | Monitoring |
 | 2024-12-23 | Added Hyperion monitoring (RabbitMQ/Redis) + managed Grafana dashboards | Monitoring |
@@ -178,6 +180,9 @@ These optimizations are handled automatically during container initialization th
 - `KIBANA_VERSION`: Defines the version of Kibana for compatibility with Elasticsearch
 - `HYPERION_VERSION`: Configure Hyperion Version deployment
 - `ELASTIC_MAX_MEM`/`ELASTIC_MIN_MEM`: ES memory limits
+- `ES_HEAP_DUMP_PATH`: Directory path for Elasticsearch heap dumps (default: /var/log/elasticsearch)
+- `ES_GC_LOG_PATH`: Directory path for Elasticsearch garbage collection logs (default: /var/log/elasticsearch)
+- `ES_JAVA_OPTS`: Java options for Elasticsearch, including heap dump settings
 - `RABBITMQ_DEFAULT_USER`: The default username for RabbitMQ access
 - `RABBITMQ_DEFAULT_PASS`: The default password for RabbitMQ access
 - `RABBITMQ_DEFAULT_VHOST`: The default virtual host in RabbitMQ, used for isolation and management of queues
