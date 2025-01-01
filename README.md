@@ -44,6 +44,7 @@ docker-compose -f ./docker-compose-generated-atomic.yml down
 | PostgreSQL | Database | 5432 | Atomic |
 | Grafana | Metrics Dashboard | 3000 | Both |
 | Prometheus | Metrics Collection | 9090 | Both |
+| ES Exporters | Elasticsearch Metrics | 9114+ | Hyperion |
 
 ## 📋 Prerequisites
 
@@ -119,6 +120,16 @@ GF_PASSWORD=admin123
 AMOUNT_OF_NODE_INSTANCES=2
 ```
 
+When you modify the `AMOUNT_OF_NODE_INSTANCES` in your `.env` file and run `generate_hyperion_compose.py`:
+1. The script will generate the appropriate number of Elasticsearch nodes
+2. It will automatically create corresponding Elasticsearch exporters (one per ES node)
+3. The Prometheus configuration (`prometheus/hyperion/prometheus.yml`) will be dynamically updated to monitor all ES instances
+4. Each ES exporter will be assigned a unique port starting from 9114 (e.g., 9114, 9115, etc.)
+
+For example, with `AMOUNT_OF_NODE_INSTANCES=2`:
+- ES Node 1 → elasticsearch-exporter-1:9114
+- ES Node 2 → elasticsearch-exporter-2:9115
+
 ### PostgreSQL Optimizations
 The PostgreSQL instance is automatically configured with performance optimizations based on the host system's resources:
 
@@ -137,6 +148,7 @@ These optimizations are handled automatically during container initialization th
 
 | Date | Improvement | Impact |
 |------|------------|---------|
+| 2024-12-24 | Added dynamic Prometheus configuration for ES exporters | Monitoring |
 | 2024-12-23 | Added Atomic monitoring (Postgres/Redis) + managed Grafana dashboards | Monitoring |
 | 2024-12-23 | Added Hyperion monitoring (RabbitMQ/Redis) + managed Grafana dashboards | Monitoring |
 | 2024-12-22 | Custom built exporters for nodeos + managed Grafana dashboards | Monitoring |
