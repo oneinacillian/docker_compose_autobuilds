@@ -93,6 +93,11 @@ LEAP_DEB_FILE=wax-leap-503wax01_5.0.3wax01-ubuntu-22.04_amd64.deb
 # Grafana settings
 GF_USERNAME=admin
 GF_PASSWORD=admin123
+
+# Elasticsearch settings
+ES_HEAP_DUMP_PATH=/var/log/elasticsearch
+ES_GC_LOG_PATH=/var/log/elasticsearch
+ES_JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${ES_HEAP_DUMP_PATH}"
 ```
 </details>
 
