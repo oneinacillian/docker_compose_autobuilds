@@ -114,6 +114,67 @@ GF_PASSWORD=admin123
 
 ## 🛠️ Advanced Configuration
 
+### Elasticsearch Configuration
+The deployment automatically manages Elasticsearch configuration through `elasticsearch.yml` files. Each Elasticsearch node gets its own optimized configuration with the following settings:
+
+```yaml
+# Memory settings
+indices.memory.index_buffer_size: 30%
+indices.fielddata.cache.size: 25%
+indices.queries.cache.size: 25%
+
+# Thread pool settings
+thread_pool:
+  write:
+    size: 8
+    queue_size: 1000
+  search:
+    size: 12
+    queue_size: 1000
+
+# Recovery settings
+indices.recovery.max_bytes_per_sec: 500mb
+indices.recovery.max_concurrent_file_chunks: 8
+
+# Cache and disk settings
+cache.recycler.page.type: NONE
+cluster.routing.allocation.disk.threshold_enabled: false
+http.max_content_length: 500mb
+```
+
+These configurations are automatically generated and placed in:
+```
+elasticsearch/config/es{n}/elasticsearch.yml
+```
+Where `{n}` represents the node number (e.g., es1, es2, etc.)
+
+#### Customizing Elasticsearch Configuration
+To modify the default Elasticsearch settings:
+
+1. Locate the `generate_elasticsearch_config()` function in `generate_hyperion_compose.py`:
+```python
+def generate_elasticsearch_config():
+    return """
+    # Memory settings
+    indices.memory.index_buffer_size: 30%
+    ...
+    """
+```
+
+2. Edit the configuration string in this function to match your desired settings
+3. Run the generation script again:
+```bash
+python3 generate_hyperion_compose.py
+```
+
+Common modifications include:
+- Adjusting memory settings for different hardware configurations
+- Modifying thread pool sizes for different workloads
+- Changing recovery settings for network optimization
+- Updating cache settings for memory management
+
+> Note: Make sure to back up your configuration changes as they will be overwritten if you update the repository.
+
 ### Custom Elasticsearch Cluster
 ```bash
 # Set desired node count in .env
@@ -122,9 +183,10 @@ AMOUNT_OF_NODE_INSTANCES=2
 
 When you modify the `AMOUNT_OF_NODE_INSTANCES` in your `.env` file and run `generate_hyperion_compose.py`:
 1. The script will generate the appropriate number of Elasticsearch nodes
-2. It will automatically create corresponding Elasticsearch exporters (one per ES node)
-3. The Prometheus configuration (`prometheus/hyperion/prometheus.yml`) will be dynamically updated to monitor all ES instances
-4. Each ES exporter will be assigned a unique port starting from 9114 (e.g., 9114, 9115, etc.)
+2. It will create optimized elasticsearch.yml configurations for each node
+3. It will automatically create corresponding Elasticsearch exporters (one per ES node)
+4. The Prometheus configuration (`prometheus/hyperion/prometheus.yml`) will be dynamically updated to monitor all ES instances
+5. Each ES exporter will be assigned a unique port starting from 9114 (e.g., 9114, 9115, etc.)
 
 For example, with `AMOUNT_OF_NODE_INSTANCES=2`:
 - ES Node 1 → elasticsearch-exporter-1:9114
@@ -148,6 +210,7 @@ These optimizations are handled automatically during container initialization th
 
 | Date | Improvement | Impact |
 |------|------------|---------|
+| 2025-01-02 | Added automated Elasticsearch configuration management | Performance |
 | 2025-01-01 | Added healthcheck to Elasticsearch | Monitoring |
 | 2025-01-01 | Added ES heap dump and GC logging configuration | Debugging |
 | 2024-12-24 | Added dynamic Prometheus configuration for ES exporters | Monitoring |
