@@ -1,6 +1,54 @@
 import os
 from dotenv import load_dotenv
 
+def generate_elasticsearch_config():
+    return """
+# Memory settings
+indices.memory.index_buffer_size: 30%
+indices.fielddata.cache.size: 25%
+indices.queries.cache.size: 25%
+
+# Thread pool settings
+thread_pool:
+  write:
+    size: 8
+    queue_size: 1000
+  search:
+    size: 12
+    queue_size: 1000
+
+# Recovery settings
+indices.recovery.max_bytes_per_sec: 500mb
+indices.recovery.max_concurrent_file_chunks: 8
+
+# Cache settings
+cache.recycler.page.type: NONE
+
+# Disk settings
+cluster.routing.allocation.disk.threshold_enabled: false
+
+# HTTP settings
+http.max_content_length: 500mb
+"""
+
+def setup_elasticsearch_config(node_count):
+    import os
+    
+    # Create base elasticsearch config directory
+    os.makedirs("elasticsearch/config", exist_ok=True)
+    
+    # Generate elasticsearch.yml content
+    es_config = generate_elasticsearch_config()
+    
+    # Create config directory and files for each node
+    for i in range(1, node_count + 1):
+        node_config_dir = f"elasticsearch/config/es{i}"
+        os.makedirs(node_config_dir, exist_ok=True)
+        
+        # Write elasticsearch.yml only
+        with open(f"{node_config_dir}/elasticsearch.yml", "w") as f:
+            f.write(es_config)
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -11,10 +59,10 @@ es_java_opts = os.getenv("ES_JAVA_OPTS", "-XX:+HeapDumpOnOutOfMemoryError")
 
 # Load the number of nodes and other configurations from the environment
 amount_of_nodes = int(os.getenv("AMOUNT_OF_NODE_INSTANCES", 1))
-elasticsearch_version = os.getenv("ELASTICSEARCH_VERSION", "8.13.2")
-elastic_min_mem = os.getenv("ELASTIC_MIN_MEM", "1g")
-elastic_max_mem = os.getenv("ELASTIC_MAX_MEM", "2g")
-kibana_version = os.getenv("KIBANA_VERSION", "8.13.2")
+elasticsearch_version = os.getenv("ELASTICSEARCH_VERSION", "8.17.0")
+elastic_min_mem = os.getenv("ELASTIC_MIN_MEM", "15g")
+elastic_max_mem = os.getenv("ELASTIC_MAX_MEM", "15g")
+kibana_version = os.getenv("KIBANA_VERSION", "8.17.0")
 rabbitmq_user = os.getenv("RABBITMQ_DEFAULT_USER", "rabbitmquser")
 rabbitmq_pass = os.getenv("RABBITMQ_DEFAULT_PASS", "rabbitmqpass")
 rabbitmq_vhost = os.getenv("RABBITMQ_DEFAULT_VHOST", "hyperion")
@@ -81,7 +129,22 @@ services:
       - esnet
     volumes:
       - redisdata:/data
-    command: redis-server --appendonly yes --supervised systemd --maxmemory 10gb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server 
+      --appendonly yes 
+      --appendfsync everysec
+      --maxmemory 8gb 
+      --maxmemory-policy volatile-lru
+      --save 900 1
+      --save 300 10
+      --tcp-keepalive 60
+      --io-threads 2
+      --io-threads-do-reads yes
+      --activedefrag yes
+      --active-defrag-threshold-lower 10
+      --active-defrag-threshold-upper 100
+      --active-defrag-cycle-min 25
+      --active-defrag-cycle-max 75
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -224,26 +287,37 @@ node_template = """
       - "cluster.name=es-docker-cluster"
       - "cluster.initial_master_nodes={initial_master_nodes}"
       - "discovery.seed_hosts={seed_hosts}"
-      - "ES_JAVA_OPTS=-Xms{min_mem} -Xmx{max_mem} {es_java_opts}"
+      - "network.host=0.0.0.0"
+      - "network.publish_host=es{index}"
+      - "transport.host=0.0.0.0"
+      - "node.roles=[master, data, ingest, remote_cluster_client]"
+      - "ES_JAVA_OPTS=-Xms{min_mem} -Xmx{max_mem} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/elasticsearch"
       - "ES_HEAP_DUMP_PATH={es_heap_dump_path}"
       - "ES_GC_LOG_PATH={es_gc_log_path}"
+      - "bootstrap.memory_lock=true"
       - "xpack.security.enabled=false"
       - "xpack.monitoring.collection.enabled=true"
-      - "bootstrap.memory_lock=false"
+    ports:
+      - "127.0.0.1:{http_port}:9200"
+      - "127.0.0.1:{transport_port}:9300"
     ulimits:
       memlock:
         soft: -1
         hard: -1
+      nofile:
+        soft: 65535
+        hard: 65535
     volumes:
       - esdata{index}:/usr/share/elasticsearch/data
+      - ./elasticsearch/config/es{index}/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
     networks:
       - esnet
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq \\"status\\":\\"red\\""]
-      interval: 20s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -vq \\\"status\\\":\\\"red\\\""]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
 """
 
 # Base for volumes and networks
@@ -266,17 +340,20 @@ initial_master_nodes = ",".join([f"es{i}" for i in range(1, amount_of_nodes + 1)
 seed_hosts = initial_master_nodes
 
 for i in range(1, amount_of_nodes + 1):
-    services += node_template.format(
+    node_config = node_template.format(
         index=i,
         version=elasticsearch_version,
-        initial_master_nodes=initial_master_nodes,
-        seed_hosts=seed_hosts,
+        initial_master_nodes=initial_master_nodes if amount_of_nodes > 1 else "es1",
+        seed_hosts=seed_hosts if amount_of_nodes > 1 else "es1",
         min_mem=elastic_min_mem,
         max_mem=elastic_max_mem,
         es_java_opts=es_java_opts,
         es_heap_dump_path=es_heap_dump_path,
-        es_gc_log_path=es_gc_log_path
+        es_gc_log_path=es_gc_log_path,
+        http_port=9200 + i - 1,
+        transport_port=9300 + i - 1
     )
+    services += node_config
 
 # Generate volumes for Elasticsearch
 volumes = "\n".join([f"  esdata{i}:" for i in range(1, amount_of_nodes + 1)])
@@ -356,3 +433,12 @@ def update_prometheus_config(node_count):
 # Add this line at the end of the script, after writing the docker-compose file
 update_prometheus_config(amount_of_nodes)
 print(f"Updated prometheus.yml with {amount_of_nodes} elasticsearch-exporter targets.")
+
+# Keep the rest of your existing script, but add this before generating the docker-compose file:
+setup_elasticsearch_config(amount_of_nodes)
+
+# Update the Kibana configuration in base_compose to use the dynamic ES URI
+base_compose = base_compose.replace(
+    '"ELASTICSEARCH_URL=http://es1:9200"',
+    f'"ELASTICSEARCH_URL=http://es1:9200"'
+)
