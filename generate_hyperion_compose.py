@@ -133,8 +133,8 @@ services:
       redis-server 
       --appendonly yes 
       --appendfsync everysec
-      --maxmemory 8gb 
-      --maxmemory-policy volatile-lru
+      --maxmemory 6gb
+      --maxmemory-policy allkeys-lru
       --save 900 1
       --save 300 10
       --tcp-keepalive 60
@@ -145,6 +145,9 @@ services:
       --active-defrag-threshold-upper 100
       --active-defrag-cycle-min 25
       --active-defrag-cycle-max 75
+      --lazyfree-lazy-eviction yes
+      --lazyfree-lazy-expire yes
+      --lazyfree-lazy-server-del yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
