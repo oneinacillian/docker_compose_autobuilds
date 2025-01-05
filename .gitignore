@@ -1,3 +1,11 @@
 ./
 snapshot-*
 backup/*
+cursor.txt
+docker_compose_autobuilds.code-workspace
+docker-compose-generated.yml
+docker-compose-generated-hyperion.yml
+docker-compose-generated-atomic.yml
+docker-compose-generated.yml
+elasticsearch/*
+not-upload-to-merge/*
