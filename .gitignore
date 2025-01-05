@@ -7,3 +7,5 @@ docker-compose-generated.yml
 docker-compose-generated-hyperion.yml
 docker-compose-generated-atomic.yml
 docker-compose-generated.yml
+elasticsearch/*
+not-upload-to-merge/*
