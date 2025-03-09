@@ -98,6 +98,9 @@ GF_PASSWORD=admin123
 ES_HEAP_DUMP_PATH=/var/log/elasticsearch
 ES_GC_LOG_PATH=/var/log/elasticsearch
 ES_JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${ES_HEAP_DUMP_PATH}"
+
+# Monitoring configuration
+MONITORING_ENABLED=true
 ```
 </details>
 
@@ -118,6 +121,29 @@ ES_JAVA_OPTS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${ES_HEAP_DUMP_PA
 - **Custom Exporters**: PostgreSQL, Redis
 
 ## 🛠️ Advanced Configuration
+
+### Monitoring Toggle
+You can enable or disable the monitoring stack (Prometheus, Grafana, and all exporters) by setting the `MONITORING_ENABLED` variable in your `.env` file:
+
+```env
+# Enable monitoring (default)
+MONITORING_ENABLED=true
+
+# Disable monitoring
+MONITORING_ENABLED=false
+```
+
+When monitoring is disabled:
+- Prometheus and Grafana containers will not be included in the compose file
+- All exporters (Elasticsearch, Redis, RabbitMQ, Nodeos) will be excluded
+- Prometheus configuration will not be updated
+- Grafana data volume will not be created
+
+This feature is useful for:
+- Development environments where monitoring is not needed
+- Resource-constrained systems
+- Simplified deployments for testing
+- Production environments where monitoring is handled separately
 
 ### Elasticsearch Configuration
 The deployment automatically manages Elasticsearch configuration through `elasticsearch.yml` files. Each Elasticsearch node gets its own optimized configuration with the following settings:
@@ -215,6 +241,7 @@ These optimizations are handled automatically during container initialization th
 
 | Date | Improvement | Impact |
 |------|------------|---------|
+| 2025-01-05 | Added monitoring toggle feature | Resource Optimization |
 | 2025-01-02 | Added automated Elasticsearch configuration management | Performance |
 | 2025-01-01 | Added healthcheck to Elasticsearch | Monitoring |
 | 2025-01-01 | Added ES heap dump and GC logging configuration | Debugging |
@@ -275,6 +302,9 @@ These optimizations are handled automatically during container initialization th
 ### Grafana Variables
 - `GF_USERNAME`: Grafana username
 - `GF_PASSWORD`: Grafana password
+
+### Monitoring Variables
+- `MONITORING_ENABLED`: Enable or disable the monitoring stack (Prometheus, Grafana, and exporters)
 
 </details>
 
