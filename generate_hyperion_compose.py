@@ -56,6 +56,7 @@ load_dotenv()
 es_heap_dump_path = os.getenv("ES_HEAP_DUMP_PATH", "/var/log/elasticsearch")
 es_gc_log_path = os.getenv("ES_GC_LOG_PATH", "/var/log/elasticsearch")
 es_java_opts = os.getenv("ES_JAVA_OPTS", "-XX:+HeapDumpOnOutOfMemoryError")
+monitoring_enabled = os.getenv("MONITORING_ENABLED", "true").lower() == "true"
 
 # Load the number of nodes and other configurations from the environment
 amount_of_nodes = int(os.getenv("AMOUNT_OF_NODE_INSTANCES", 1))
@@ -74,12 +75,31 @@ leap_deb_file=os.getenv("LEAP_DEB_FILE","wax-leap-404wax01_4.0.4wax01-ubuntu-18.
 gf_username=os.getenv("GF_USERNAME","admin")
 gf_password=os.getenv("GF_PASSWORD","admin123")
 
+# Resource constraints
+redis_memory = os.getenv("REDIS_MEMORY", "2g")
+redis_cpus = os.getenv("REDIS_CPUS", "1")
+rabbitmq_memory = os.getenv("RABBITMQ_MEMORY", "2g")
+rabbitmq_cpus = os.getenv("RABBITMQ_CPUS", "1")
+hyperion_memory = os.getenv("HYPERION_MEMORY", "8g")
+hyperion_cpus = os.getenv("HYPERION_CPUS", "2")
+node_memory = os.getenv("NODE_MEMORY", "16g")
+node_cpus = os.getenv("NODE_CPUS", "4")
+kibana_memory = os.getenv("KIBANA_MEMORY", "2g")
+kibana_cpus = os.getenv("KIBANA_CPUS", "1")
+prometheus_memory = os.getenv("PROMETHEUS_MEMORY", "2g")
+prometheus_cpus = os.getenv("PROMETHEUS_CPUS", "1")
+grafana_memory = os.getenv("GRAFANA_MEMORY", "1g")
+grafana_cpus = os.getenv("GRAFANA_CPUS", "1")
+
 # Before the base_compose definition, add this helper function
 def generate_es_uri(node_count):
     uris = [f'http://es{i}:9200' for i in range(1, node_count + 1)]
     return ','.join(uris)
 
 def generate_es_exporters(node_count):
+    if not monitoring_enabled:
+        return ""
+        
     exporters = ""
     for i in range(1, node_count + 1):
         exporter = f"""
@@ -98,6 +118,69 @@ def generate_es_exporters(node_count):
         exporters += exporter
     return exporters
 
+# Define monitoring services separately
+monitoring_services = f"""
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/hyperion/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {prometheus_memory}
+          cpus: "{prometheus_cpus}"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3030:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER={gf_username}
+      - GF_SECURITY_ADMIN_PASSWORD={gf_password}
+    volumes:
+      - ./grafana/provisioning/hyperion:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {grafana_memory}
+          cpus: "{grafana_cpus}"
+
+  nodeos-custom-exporter:
+    build:
+      context: ./custom-nodeos-exporter
+      dockerfile: Dockerfile
+    container_name: nodeos-custom-exporter
+    ports:
+      - "8000:8000"
+    depends_on:
+      - node
+    networks:
+      - esnet
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - esnet
+    depends_on:
+      - redis      
+"""
+
 # Base fixed Docker Compose services
 base_compose = f"""
 version: '3'
@@ -114,6 +197,11 @@ services:
       - es1
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {kibana_memory}
+          cpus: "{kibana_cpus}"
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --fail http://localhost:5601/api/status || exit 1"]
       interval: 30s
@@ -129,6 +217,11 @@ services:
       - esnet
     volumes:
       - redisdata:/data
+    deploy:
+      resources:
+        limits:
+          memory: {redis_memory}
+          cpus: "{redis_cpus}"
     command: >
       redis-server 
       --appendonly yes 
@@ -154,18 +247,6 @@ services:
       timeout: 5s
       retries: 3
 
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: redis-exporter
-    environment:
-      - REDIS_ADDR=redis:6379
-    ports:
-      - "9121:9121"
-    networks:
-      - esnet
-    depends_on:
-      - redis      
-
   rabbitmq:
     build:
       context: ./rabbitmq/Deployment
@@ -188,6 +269,11 @@ services:
       - "127.0.0.1:15692:15692"
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {rabbitmq_memory}
+          cpus: "{rabbitmq_cpus}"
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
       - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
@@ -215,6 +301,11 @@ services:
       - "1234:1234"
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {hyperion_memory}
+          cpus: "{hyperion_cpus}"
     volumes:
       - hyperiondata:/app/hyperiondata
     depends_on:
@@ -238,47 +329,27 @@ services:
       - "127.0.0.1:8888:8888"
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {node_memory}
+          cpus: "{node_cpus}"
     volumes:
       - node:/app/node/data
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/hyperion/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-    networks:
-      - esnet
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3030:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER={gf_username}
-      - GF_SECURITY_ADMIN_PASSWORD={gf_password}
-    volumes:
-      - ./grafana/provisioning/hyperion:/etc/grafana/provisioning
-      - grafana-data:/var/lib/grafana
-    networks:
-      - esnet
-
-  nodeos-custom-exporter:
-    build:
-      context: ./custom-nodeos-exporter
-      dockerfile: Dockerfile
-    container_name: nodeos-custom-exporter
-    ports:
-      - "8000:8000"
-    depends_on:
-      - node
-    networks:
-      - esnet
 """
+
+# Remove redis-exporter from base_compose since we've moved it to monitoring_services
+base_compose = base_compose.replace("""  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - esnet
+    depends_on:
+      - redis      """, "")
 
 # Template for Elasticsearch nodes
 node_template = """
@@ -361,27 +432,17 @@ for i in range(1, amount_of_nodes + 1):
 # Generate volumes for Elasticsearch
 volumes = "\n".join([f"  esdata{i}:" for i in range(1, amount_of_nodes + 1)])
 
-# Combine everything - update this section at the end of the file
-# Remove the elasticsearch exporters from base_compose if it exists
-base_compose = base_compose.replace("""  elasticsearch-exporter:
-    build:
-      context: ./elasticsearch_exporter
-      dockerfile: Dockerfile
-    container_name: elasticsearch-exporter
-    command:
-      - "--es.uri={generate_es_uri(amount_of_nodes)}"
-    ports:
-      - "9114:9114"
-    depends_on:
-      - es1
-    networks:
-      - esnet""", "")
-
-# Generate all services first, then volumes and networks
-all_services = base_compose + services + generate_es_exporters(amount_of_nodes)
+# Combine everything
+all_services = base_compose + services
+if monitoring_enabled:
+    all_services += monitoring_services + generate_es_exporters(amount_of_nodes)
 
 # Combine services with volumes and networks
-final_compose = all_services + volumes_and_networks.format(volumes=volumes)
+volumes_section = volumes_and_networks.format(volumes=volumes)
+if monitoring_enabled:
+    volumes_section = volumes_section.replace("volumes:", "volumes:\n  grafana-data:")
+
+final_compose = all_services + volumes_section
 
 # Write to docker-compose.yml
 with open("docker-compose-generated-hyperion.yml", "w") as f:
@@ -390,6 +451,10 @@ with open("docker-compose-generated-hyperion.yml", "w") as f:
 print(f"Generated docker-compose-generated-hyperion.yml with {amount_of_nodes} Elasticsearch nodes.")
 
 def update_prometheus_config(node_count):
+    if not monitoring_enabled:
+        print("Monitoring disabled, skipping prometheus config update.")
+        return
+        
     # Read the existing prometheus.yml
     with open("prometheus/hyperion/prometheus.yml", "r") as f:
         config = f.readlines()
@@ -435,7 +500,10 @@ def update_prometheus_config(node_count):
 
 # Add this line at the end of the script, after writing the docker-compose file
 update_prometheus_config(amount_of_nodes)
-print(f"Updated prometheus.yml with {amount_of_nodes} elasticsearch-exporter targets.")
+if monitoring_enabled:
+    print(f"Updated prometheus.yml with {amount_of_nodes} elasticsearch-exporter targets.")
+else:
+    print("Monitoring disabled, prometheus.yml not updated.")
 
 # Keep the rest of your existing script, but add this before generating the docker-compose file:
 setup_elasticsearch_config(amount_of_nodes)
