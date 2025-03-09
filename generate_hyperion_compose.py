@@ -75,6 +75,22 @@ leap_deb_file=os.getenv("LEAP_DEB_FILE","wax-leap-404wax01_4.0.4wax01-ubuntu-18.
 gf_username=os.getenv("GF_USERNAME","admin")
 gf_password=os.getenv("GF_PASSWORD","admin123")
 
+# Resource constraints
+redis_memory = os.getenv("REDIS_MEMORY", "2g")
+redis_cpus = os.getenv("REDIS_CPUS", "1")
+rabbitmq_memory = os.getenv("RABBITMQ_MEMORY", "2g")
+rabbitmq_cpus = os.getenv("RABBITMQ_CPUS", "1")
+hyperion_memory = os.getenv("HYPERION_MEMORY", "8g")
+hyperion_cpus = os.getenv("HYPERION_CPUS", "2")
+node_memory = os.getenv("NODE_MEMORY", "16g")
+node_cpus = os.getenv("NODE_CPUS", "4")
+kibana_memory = os.getenv("KIBANA_MEMORY", "2g")
+kibana_cpus = os.getenv("KIBANA_CPUS", "1")
+prometheus_memory = os.getenv("PROMETHEUS_MEMORY", "2g")
+prometheus_cpus = os.getenv("PROMETHEUS_CPUS", "1")
+grafana_memory = os.getenv("GRAFANA_MEMORY", "1g")
+grafana_cpus = os.getenv("GRAFANA_CPUS", "1")
+
 # Before the base_compose definition, add this helper function
 def generate_es_uri(node_count):
     uris = [f'http://es{i}:9200' for i in range(1, node_count + 1)]
@@ -115,6 +131,11 @@ monitoring_services = f"""
       - "--config.file=/etc/prometheus/prometheus.yml"
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {prometheus_memory}
+          cpus: "{prometheus_cpus}"
 
   grafana:
     image: grafana/grafana:latest
@@ -129,6 +150,11 @@ monitoring_services = f"""
       - grafana-data:/var/lib/grafana
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {grafana_memory}
+          cpus: "{grafana_cpus}"
 
   nodeos-custom-exporter:
     build:
@@ -171,6 +197,11 @@ services:
       - es1
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {kibana_memory}
+          cpus: "{kibana_cpus}"
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --fail http://localhost:5601/api/status || exit 1"]
       interval: 30s
@@ -186,6 +217,11 @@ services:
       - esnet
     volumes:
       - redisdata:/data
+    deploy:
+      resources:
+        limits:
+          memory: {redis_memory}
+          cpus: "{redis_cpus}"
     command: >
       redis-server 
       --appendonly yes 
@@ -233,6 +269,11 @@ services:
       - "127.0.0.1:15692:15692"
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {rabbitmq_memory}
+          cpus: "{rabbitmq_cpus}"
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
       - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
@@ -260,6 +301,11 @@ services:
       - "1234:1234"
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {hyperion_memory}
+          cpus: "{hyperion_cpus}"
     volumes:
       - hyperiondata:/app/hyperiondata
     depends_on:
@@ -283,6 +329,11 @@ services:
       - "127.0.0.1:8888:8888"
     networks:
       - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {node_memory}
+          cpus: "{node_cpus}"
     volumes:
       - node:/app/node/data
 """

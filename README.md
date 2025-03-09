@@ -75,6 +75,22 @@ ELASTIC_MAX_MEM=15g
 ELASTIC_MIN_MEM=15g
 AMOUNT_OF_NODE_INSTANCES=2
 
+# Resource constraints
+REDIS_MEMORY=2g
+REDIS_CPUS=1
+RABBITMQ_MEMORY=2g
+RABBITMQ_CPUS=1
+HYPERION_MEMORY=8g
+HYPERION_CPUS=2
+NODE_MEMORY=16g
+NODE_CPUS=4
+KIBANA_MEMORY=2g
+KIBANA_CPUS=1
+PROMETHEUS_MEMORY=2g
+PROMETHEUS_CPUS=1
+GRAFANA_MEMORY=1g
+GRAFANA_CPUS=1
+
 # Atomic Settings
 SHIPHOST=172.168.40.50
 SHIPPORT=29876
@@ -121,6 +137,40 @@ MONITORING_ENABLED=true
 - **Custom Exporters**: PostgreSQL, Redis
 
 ## 🛠️ Advanced Configuration
+
+### Resource Constraints
+You can customize the memory and CPU limits for each service through environment variables:
+
+```env
+# Memory and CPU limits for services
+REDIS_MEMORY=2g
+REDIS_CPUS=1
+RABBITMQ_MEMORY=2g
+RABBITMQ_CPUS=1
+HYPERION_MEMORY=8g
+HYPERION_CPUS=2
+NODE_MEMORY=16g
+NODE_CPUS=4
+KIBANA_MEMORY=2g
+KIBANA_CPUS=1
+PROMETHEUS_MEMORY=2g
+PROMETHEUS_CPUS=1
+GRAFANA_MEMORY=1g
+GRAFANA_CPUS=1
+```
+
+These constraints are applied to the Docker containers using the `deploy.resources.limits` configuration. You can verify the applied constraints using:
+
+```bash
+docker inspect <container_name> | grep -A 10 "HostConfig"
+```
+
+For example, to check Redis resource constraints:
+```bash
+docker inspect redis | grep -A 10 "HostConfig"
+```
+
+This will show the memory limit in bytes (e.g., 2147483648 for 2GB) and CPU limit in nanoseconds (e.g., 1000000000 for 1 CPU).
 
 ### Monitoring Toggle
 You can enable or disable the monitoring stack (Prometheus, Grafana, and all exporters) by setting the `MONITORING_ENABLED` variable in your `.env` file:
@@ -241,6 +291,7 @@ These optimizations are handled automatically during container initialization th
 
 | Date | Improvement | Impact |
 |------|------------|---------|
+| 2025-01-10 | Added resource constraints for all services | Performance & Stability |
 | 2025-01-05 | Added monitoring toggle feature | Resource Optimization |
 | 2025-01-02 | Added automated Elasticsearch configuration management | Performance |
 | 2025-01-01 | Added healthcheck to Elasticsearch | Monitoring |
@@ -264,6 +315,7 @@ These optimizations are handled automatically during container initialization th
 - Ensure no port conflicts
 - Verify environment variables are set correctly
 - Confirm data volumes are properly mounted
+- Verify resource constraints: `docker inspect <container_name> | grep -A 10 "HostConfig"`
 
 ## 📚 Documentation
 
@@ -284,6 +336,22 @@ These optimizations are handled automatically during container initialization th
 - `HYPERION_ENVIRONMENT`: Hyperion environment
 - `HYPERION_LAUNCH_ON_STARTUP`: Hyperion startup at launchtime (Ship + Hyperion indexer)
 - `AMOUNT_OF_NODE_INSTANCES`: The amount of ES instances you would like to have part of your Elasticsearch solution
+
+### Resource Constraint Variables
+- `REDIS_MEMORY`: Memory limit for Redis (default: 2g)
+- `REDIS_CPUS`: CPU limit for Redis (default: 1)
+- `RABBITMQ_MEMORY`: Memory limit for RabbitMQ (default: 2g)
+- `RABBITMQ_CPUS`: CPU limit for RabbitMQ (default: 1)
+- `HYPERION_MEMORY`: Memory limit for Hyperion (default: 8g)
+- `HYPERION_CPUS`: CPU limit for Hyperion (default: 2)
+- `NODE_MEMORY`: Memory limit for Node (default: 16g)
+- `NODE_CPUS`: CPU limit for Node (default: 4)
+- `KIBANA_MEMORY`: Memory limit for Kibana (default: 2g)
+- `KIBANA_CPUS`: CPU limit for Kibana (default: 1)
+- `PROMETHEUS_MEMORY`: Memory limit for Prometheus (default: 2g)
+- `PROMETHEUS_CPUS`: CPU limit for Prometheus (default: 1)
+- `GRAFANA_MEMORY`: Memory limit for Grafana (default: 1g)
+- `GRAFANA_CPUS`: CPU limit for Grafana (default: 1)
 
 ### Atomic Variables
 -  `SHIPHOST`: WS connection to your full SHIP
