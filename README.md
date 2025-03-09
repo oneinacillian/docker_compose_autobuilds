@@ -291,8 +291,8 @@ These optimizations are handled automatically during container initialization th
 
 | Date | Improvement | Impact |
 |------|------------|---------|
-| 2025-01-10 | Added resource constraints for all services | Performance & Stability |
-| 2025-01-05 | Added monitoring toggle feature | Resource Optimization |
+| 2025-03-08 | Added resource constraints for all services | Performance & Stability |
+| 2025-03-07 | Added monitoring toggle feature | Resource Optimization |
 | 2025-01-02 | Added automated Elasticsearch configuration management | Performance |
 | 2025-01-01 | Added healthcheck to Elasticsearch | Monitoring |
 | 2025-01-01 | Added ES heap dump and GC logging configuration | Debugging |
