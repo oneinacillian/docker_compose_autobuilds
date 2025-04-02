@@ -291,6 +291,7 @@ These optimizations are handled automatically during container initialization th
 
 | Date | Improvement | Impact |
 |------|------------|---------|
+| 2025-04-01 | Added HAProxy reverse proxy with host-based routing | Security & Flexibility |
 | 2025-03-08 | Added resource constraints for all services | Performance & Stability |
 | 2025-03-07 | Added monitoring toggle feature | Resource Optimization |
 | 2025-01-02 | Added automated Elasticsearch configuration management | Performance |
@@ -374,6 +375,16 @@ These optimizations are handled automatically during container initialization th
 ### Monitoring Variables
 - `MONITORING_ENABLED`: Enable or disable the monitoring stack (Prometheus, Grafana, and exporters)
 
+### HAProxy Variables
+- `PROXY_ENABLED`: Enable or disable the HAProxy reverse proxy (default: true)
+- `HAPROXY_HTTP_PORT`: External HTTP port for HAProxy (default: 8080)
+- `HAPROXY_HTTPS_PORT`: External HTTPS port for HAProxy (default: 8443)
+- `HAPROXY_MEMORY`: Memory limit for HAProxy (default: 1g)
+- `HAPROXY_CPUS`: CPU limit for HAProxy (default: 1)
+- `PRODUCTION_ALIAS_KIBANA`: Production hostname for Kibana (used for host-based routing)
+- `PRODUCTION_ALIAS_GRAFANA`: Production hostname for Grafana (used for host-based routing)
+- `PRODUCTION_ALIAS_HYPERION`: Production hostname for Hyperion (used for host-based routing)
+
 </details>
 
 <details>
@@ -397,3 +408,83 @@ ATOMIC_ENVIRONMENT=testnet
 - Consider using environment-specific `.env` files
 - Backup your `.env` file securely
 - Don't commit `.env` files to version control
+
+## 🔐 HAProxy Reverse Proxy
+
+The deployment includes an HAProxy reverse proxy that provides:
+- Host-based routing to different services
+- SSL termination
+- HTTP to HTTPS redirection
+
+### Configuration
+
+Enable and configure the proxy through these environment variables:
+
+```env
+# Enable/disable proxy
+PROXY_ENABLED=true
+
+# Port configuration
+HAPROXY_HTTP_PORT=8080
+HAPROXY_HTTPS_PORT=8443
+
+# Resource limits
+HAPROXY_MEMORY=1g
+HAPROXY_CPUS=1
+
+# Production hostnames (for host-based routing)
+PRODUCTION_ALIAS_KIBANA=https://autobuilds-kibana.oiac.io
+PRODUCTION_ALIAS_GRAFANA=https://autobuilds-grafana.oiac.io
+PRODUCTION_ALIAS_HYPERION=https://autobuilds-hyperion.oiac.io
+```
+
+### SSL Certificate Setup
+
+1. Prepare your SSL certificate and private key:
+   ```bash
+   # Combine certificate and key into a PEM file
+   cat your-domain.crt your-domain.key > haproxy/certs/your-domain.pem
+   
+   # Ensure proper permissions
+   chmod 600 haproxy/certs/your-domain.pem
+   ```
+
+2. For multiple domains, create a PEM file for each domain:
+   ```bash
+   # For Kibana
+   cat kibana-cert.crt kibana-key.key > haproxy/certs/autobuilds-kibana.oiac.io.pem
+   
+   # For Grafana
+   cat grafana-cert.crt grafana-key.key > haproxy/certs/autobuilds-grafana.oiac.io.pem
+   
+   # For Hyperion
+   cat hyperion-cert.crt hyperion-key.key > haproxy/certs/autobuilds-hyperion.oiac.io.pem
+   ```
+
+3. For a wildcard certificate covering all subdomains:
+   ```bash
+   # Single wildcard certificate for *.oiac.io
+   cat wildcard.oiac.io.crt wildcard.oiac.io.key > haproxy/certs/oiac.io.pem
+   ```
+
+HAProxy will automatically load all .pem files from the certs directory.
+
+### Accessing Services
+
+After configuration, you can access your services at:
+- Kibana: https://autobuilds-kibana.oiac.io:8443
+- Grafana: https://autobuilds-grafana.oiac.io:8443
+- Hyperion: https://autobuilds-hyperion.oiac.io:8443
+
+### Host-Based Routing
+
+The proxy uses host-based routing to direct traffic to the appropriate backend:
+- Requests with `Host: autobuilds-kibana.oiac.io` go to Kibana
+- Requests with `Host: autobuilds-grafana.oiac.io` go to Grafana
+- Requests with `Host: autobuilds-hyperion.oiac.io` go to Hyperion
+
+### Troubleshooting
+
+- Check HAProxy logs: `docker logs haproxy`
+- Verify SSL certificate: `openssl x509 -in haproxy/certs/your-domain.pem -text -noout`
+- Test connectivity: `curl -v -k https://autobuilds-grafana.oiac.io:8443`
