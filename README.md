@@ -488,3 +488,166 @@ The proxy uses host-based routing to direct traffic to the appropriate backend:
 - Check HAProxy logs: `docker logs haproxy`
 - Verify SSL certificate: `openssl x509 -in haproxy/certs/your-domain.pem -text -noout`
 - Test connectivity: `curl -v -k https://autobuilds-grafana.oiac.io:8443`
+
+# SSL Certificate Management
+
+## Automatic Certificate Generation with Certbot
+
+The deployment includes automatic SSL certificate generation and renewal using Certbot. This feature provides:
+- Automatic certificate generation on startup
+- Automatic renewal checks every 12 hours
+- Zero-downtime certificate updates
+- Individual domain control through environment flags
+- Staging/Production environment switching
+- Forced renewal options
+
+### Configuration Variables
+
+```env
+# Enable/disable automatic certificate generation
+CERTBOT_ENABLED=true
+
+# Email for certificate notifications (required)
+CERTBOT_EMAIL=your-email@example.com
+
+# Use staging environment for testing (recommended for initial setup)
+CERTBOT_STAGING=true
+
+# Control which domains get certificates
+REQUEST_KIBANA_CERT=true
+REQUEST_GRAFANA_CERT=true
+REQUEST_HYPERION_CERT=false
+
+# Domain configurations
+PRODUCTION_ALIAS_KIBANA=https://autobuilds-kibana.oiac.io
+PRODUCTION_ALIAS_GRAFANA=https://autobuilds-grafana.oiac.io
+PRODUCTION_ALIAS_HYPERION=https://autobuilds-hyperion.oiac.io
+
+# Force certificate renewal
+FORCE_RENEWAL=true
+```
+
+### How It Works
+
+1. **Initial Setup**:
+   - Certbot container starts with the specified configuration
+   - Creates required directories for certificates and challenges
+   - Validates domain configurations
+
+2. **Certificate Generation Process**:
+   - Checks which domains need certificates based on REQUEST_*_CERT flags
+   - Sets up HTTP-01 challenge through HAProxy for domain validation
+   - Generates certificates using Let's Encrypt API
+   - Automatically combines certificates and keys for HAProxy
+
+3. **Renewal Process**:
+   - Checks certificates every 12 hours
+   - Automatically renews certificates nearing expiration (30 days before)
+   - Uses deploy-hook to update HAProxy certificates
+   - Sends SIGHUP to HAProxy for zero-downtime reload
+
+4. **Health Checks**:
+   - HAProxy monitors backend services using appropriate health check endpoints
+   - Grafana: /api/health (unauthenticated endpoint)
+   - Kibana: /api/status
+   - Hyperion: /api/status
+
+### Best Practices
+
+1. **Initial Testing**:
+   ```env
+   CERTBOT_ENABLED=true
+   CERTBOT_EMAIL=your-email@example.com
+   CERTBOT_STAGING=true  # Use staging for testing
+   ```
+
+2. **Production Setup**:
+   ```env
+   CERTBOT_ENABLED=true
+   CERTBOT_EMAIL=your-email@example.com
+   CERTBOT_STAGING=false  # Switch to production
+   FORCE_RENEWAL=false    # Only renew when needed
+   ```
+
+3. **Selective Certificate Generation**:
+   ```env
+   # Only generate certificates for specific services
+   REQUEST_KIBANA_CERT=true
+   REQUEST_GRAFANA_CERT=true
+   REQUEST_HYPERION_CERT=false
+   ```
+
+4. **Force Certificate Renewal**:
+   ```env
+   # Force renewal of all certificates
+   FORCE_RENEWAL=true
+   ```
+
+### Troubleshooting
+
+1. **Check Certificate Status**:
+   ```bash
+   # View certificate details
+   docker compose exec certbot certbot certificates
+   
+   # Check certificate expiry
+   openssl x509 -in haproxy/certs/your-domain.pem -text -noout | grep "Not After"
+   ```
+
+2. **Monitor Renewal Process**:
+   ```bash
+   # View Certbot logs
+   docker compose logs -f certbot
+   
+   # View HAProxy logs
+   docker compose logs -f haproxy
+   ```
+
+3. **Common Issues**:
+   - DNS not properly configured: Ensure domains point to your server
+   - Port 80 not accessible: Required for HTTP-01 challenge
+   - HAProxy not reloading: Check HAProxy logs for errors
+   - Certificate not updating: Verify permissions on cert directories
+
+### Security Considerations
+
+1. **Rate Limiting**:
+   - Let's Encrypt has rate limits (5 duplicate certificates per week)
+   - Use staging environment for testing to avoid hitting limits
+   - Production certificates should only be requested when needed
+
+2. **Certificate Storage**:
+   - Certificates are stored in volume-mounted directories
+   - Private keys are protected with appropriate permissions
+   - HAProxy only has read access to certificate files
+
+3. **Automatic Updates**:
+   - Certificates are renewed automatically when nearing expiration
+   - No manual intervention required for routine renewals
+   - Email notifications for any renewal failures
+
+4. **Backup Considerations**:
+   - Regular backups of `/etc/letsencrypt` recommended
+   - Store backup of initial certificates securely
+   - Document renewal process for disaster recovery
+
+### Manual Override
+
+If you need to manually manage certificates:
+
+1. Disable automatic management:
+   ```env
+   CERTBOT_ENABLED=false
+   ```
+
+2. Place your certificates in `haproxy/certs/`:
+   ```bash
+   # For each domain
+   cat domain.crt domain.key > haproxy/certs/domain.pem
+   chmod 644 haproxy/certs/domain.pem
+   ```
+
+3. Restart HAProxy:
+   ```bash
+   docker compose restart haproxy
+   ```

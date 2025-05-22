@@ -66,6 +66,11 @@ certbot_enabled = os.getenv("CERTBOT_ENABLED", "false").lower() == "true"
 certbot_email = os.getenv("CERTBOT_EMAIL", "")
 certbot_staging = os.getenv("CERTBOT_STAGING", "true").lower() == "true"
 
+# Certificate request flags
+request_kibana_cert = os.getenv("REQUEST_KIBANA_CERT", "true").lower() == "true"
+request_grafana_cert = os.getenv("REQUEST_GRAFANA_CERT", "true").lower() == "true"
+request_hyperion_cert = os.getenv("REQUEST_HYPERION_CERT", "true").lower() == "true"
+
 # Load the number of nodes and other configurations from the environment
 amount_of_nodes = int(os.getenv("AMOUNT_OF_NODE_INSTANCES", 1))
 elasticsearch_version = os.getenv("ELASTICSEARCH_VERSION", "8.17.0")
@@ -410,11 +415,14 @@ node_template = """
 # Base for volumes and networks
 volumes_and_networks = """
 volumes:
+  grafana-data:
   redisdata:
   rabbitmqdata:
   hyperiondata:
-  grafana-data:
   node:
+  certbot-etc:
+  certbot-var:
+  certbot-www:
 {volumes}
 
 networks:
@@ -445,15 +453,76 @@ for i in range(1, amount_of_nodes + 1):
 # Generate volumes for Elasticsearch
 volumes = "\n".join([f"  esdata{i}:" for i in range(1, amount_of_nodes + 1)])
 
+# Define certbot service separately
+certbot_service = f"""
+  certbot:
+    container_name: certbot
+    build:
+      context: ./certbot
+      dockerfile: Dockerfile.certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - ./haproxy/certs:/etc/haproxy/certs
+      - certbot-www:/var/www/certbot
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - esnet
+    environment:
+      - CERTBOT_EMAIL={certbot_email}
+      - CERTBOT_STAGING={str(certbot_staging).lower()}
+      - PRODUCTION_ALIAS_KIBANA={production_alias_kibana}
+      - PRODUCTION_ALIAS_GRAFANA={production_alias_grafana}
+      - PRODUCTION_ALIAS_HYPERION={production_alias_hyperion}
+      - REQUEST_KIBANA_CERT={str(request_kibana_cert).lower()}
+      - REQUEST_GRAFANA_CERT={str(request_grafana_cert).lower()}
+      - REQUEST_HYPERION_CERT={str(request_hyperion_cert).lower()}
+      - FORCE_RENEWAL=true
+    depends_on:
+      - haproxy
+"""
+
+# Update haproxy service with certbot integration
+haproxy_service = f"""
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: haproxy
+    ports:
+      - "{haproxy_http_port}:80"
+      - "{haproxy_https_port}:443"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./haproxy/certs:/etc/haproxy/certs:ro
+      - certbot-www:/var/www/certbot:ro
+    depends_on:
+      - hyperion
+      - kibana
+      - grafana
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {haproxy_memory}
+          cpus: "{haproxy_cpus}"
+    healthcheck:
+      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+"""
+
 # Combine everything
 all_services = base_compose + services
 if monitoring_enabled:
     all_services += monitoring_services + generate_es_exporters(amount_of_nodes)
+if proxy_enabled:
+    all_services += haproxy_service
+    if certbot_enabled:
+        all_services += certbot_service
 
 # Combine services with volumes and networks
 volumes_section = volumes_and_networks.format(volumes=volumes)
-if monitoring_enabled:
-    volumes_section = volumes_section.replace("volumes:", "volumes:\n  grafana-data:")
 
 final_compose = all_services + volumes_section
 
@@ -527,56 +596,6 @@ base_compose = base_compose.replace(
     f'"ELASTICSEARCH_URL=http://es1:9200"'
 )
 
-# Define haproxy service separately
-haproxy_service = f"""
-  haproxy:
-    image: haproxy:2.8
-    container_name: haproxy
-    ports:
-      - "{haproxy_http_port}:80"
-      - "{haproxy_https_port}:443"
-    volumes:
-      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - ./haproxy/certs:/etc/ssl/certs:ro
-    depends_on:
-      - hyperion
-      - kibana
-      - grafana
-    networks:
-      - esnet
-    deploy:
-      resources:
-        limits:
-          memory: {haproxy_memory}
-          cpus: "{haproxy_cpus}"
-    healthcheck:
-      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-"""
-
-# Combine everything
-all_services = base_compose + services
-if monitoring_enabled:
-    all_services += monitoring_services + generate_es_exporters(amount_of_nodes)
-# Add haproxy service if enabled
-if proxy_enabled:
-    all_services += haproxy_service
-
-# Combine services with volumes and networks
-volumes_section = volumes_and_networks.format(volumes=volumes)
-if monitoring_enabled:
-    volumes_section = volumes_section.replace("volumes:", "volumes:\n  grafana-data:")
-
-final_compose = all_services + volumes_section
-
-# Write to docker-compose.yml
-with open("docker-compose-generated-hyperion.yml", "w") as f:
-    f.write(final_compose)
-
-print(f"Generated docker-compose-generated-hyperion.yml with {amount_of_nodes} Elasticsearch nodes.")
-
 def setup_haproxy_config():
     import os
     from urllib.parse import urlparse
@@ -592,18 +611,24 @@ def setup_haproxy_config():
     
     if production_alias_kibana:
         parsed_url = urlparse(production_alias_kibana)
-        kibana_hostname = parsed_url.netloc
+        kibana_hostname = parsed_url.netloc or "autobuilds-kibana.oiac.io"
+    else:
+        kibana_hostname = "autobuilds-kibana.oiac.io"
     
     if production_alias_grafana:
         parsed_url = urlparse(production_alias_grafana)
-        grafana_hostname = parsed_url.netloc
+        grafana_hostname = parsed_url.netloc or "autobuilds-grafana.oiac.io"
+    else:
+        grafana_hostname = "autobuilds-grafana.oiac.io"
     
     if production_alias_hyperion:
         parsed_url = urlparse(production_alias_hyperion)
-        hyperion_hostname = parsed_url.netloc
+        hyperion_hostname = parsed_url.netloc or "autobuilds-hyperion.oiac.io"
+    else:
+        hyperion_hostname = "autobuilds-hyperion.oiac.io"
     
-    # Create a basic haproxy.cfg file
-    haproxy_cfg = """global
+    # Create haproxy.cfg with proper certbot integration
+    haproxy_cfg = f"""global
     log /dev/log local0
     maxconn 4096
     user haproxy
@@ -632,64 +657,68 @@ frontend http-in
     bind *:80
     mode http
     
-    # Redirect HTTP to HTTPS
-    redirect scheme https code 301 if !{ ssl_fc }
+    # ACME challenge handling
+    acl is_acme_challenge path_beg /.well-known/acme-challenge/
+    use_backend certbot if is_acme_challenge
+    
+    # Redirect all other HTTP traffic to HTTPS
+    redirect scheme https code 301 if !is_acme_challenge
 
 frontend https-in
-    bind *:443 ssl crt /etc/ssl/certs/
+    bind *:443 ssl crt /etc/haproxy/certs/ strict-sni
     mode http
     
-    # Host-based routing with flexible matching
-"""
+    # Host-based routing
+    acl host_kibana hdr(host) -i {kibana_hostname}
+    acl host_grafana hdr(host) -i {grafana_hostname}
+    acl host_hyperion hdr(host) -i {hyperion_hostname}
     
-    # Add host-based routing ACLs
-    if kibana_hostname:
-        haproxy_cfg += f"    acl host_kibana hdr_beg(host) -i {kibana_hostname.split(':')[0]}\n"
-    if grafana_hostname:
-        haproxy_cfg += f"    acl host_grafana hdr_beg(host) -i {grafana_hostname.split(':')[0]}\n"
-    if hyperion_hostname:
-        haproxy_cfg += f"    acl host_hyperion hdr_beg(host) -i {hyperion_hostname.split(':')[0]}\n"
+    use_backend kibana_backend if host_kibana
+    use_backend grafana_backend if host_grafana
+    use_backend hyperion_backend if host_hyperion
     
-    haproxy_cfg += """
-    # Use host-based routing first
-"""
-    
-    # Add use_backend rules for host-based routing
-    if kibana_hostname:
-        haproxy_cfg += "    use_backend kibana_backend if host_kibana\n"
-    if grafana_hostname:
-        haproxy_cfg += "    use_backend grafana_backend if host_grafana\n"
-    if hyperion_hostname:
-        haproxy_cfg += "    use_backend hyperion_backend if host_hyperion\n"
-    
-    # Add default backend
-    haproxy_cfg += """
     # Default backend
     default_backend grafana_backend
+
+backend certbot
+    mode http
+    server certbot certbot:80 check resolvers docker init-addr none
 
 backend hyperion_backend
     mode http
     balance roundrobin
     option forwardfor
+    option httpchk GET /api/status
+    http-check expect status 200
     http-request set-header X-Forwarded-Port %[dst_port]
-    http-request add-header X-Forwarded-Proto https if { ssl_fc }
-    server hyperion hyperion:7000 check
+    http-request add-header X-Forwarded-Proto https if {{ ssl_fc }}
+    server hyperion hyperion:7000 check inter 2s rise 2 fall 3
 
 backend kibana_backend
     mode http
     balance roundrobin
     option forwardfor
+    option httpchk GET /api/status
+    http-check expect status 200
     http-request set-header X-Forwarded-Port %[dst_port]
-    http-request add-header X-Forwarded-Proto https if { ssl_fc }
-    server kibana kibana:5601 check
+    http-request add-header X-Forwarded-Proto https if {{ ssl_fc }}
+    server kibana kibana:5601 check inter 2s rise 2 fall 3
 
 backend grafana_backend
     mode http
     balance roundrobin
     option forwardfor
+    option httpchk GET /api/health
+    http-check expect status 200
     http-request set-header X-Forwarded-Port %[dst_port]
-    http-request add-header X-Forwarded-Proto https if { ssl_fc }
-    server grafana grafana:3000 check
+    http-request add-header X-Forwarded-Proto https if {{ ssl_fc }}
+    server grafana grafana:3000 check inter 2s rise 2 fall 3
+
+resolvers docker
+    nameserver dns 127.0.0.11:53
+    resolve_retries 3
+    timeout retry 1s
+    hold valid 10s
 """
     
     # Write the haproxy.cfg file
@@ -700,4 +729,9 @@ backend grafana_backend
 setup_elasticsearch_config(amount_of_nodes)
 if proxy_enabled:
     setup_haproxy_config()
-    print("HAProxy configuration created. Please add your SSL certificates to haproxy/certs/server.pem")
+    if certbot_enabled:
+        # Create certbot directory structure
+        os.makedirs("certbot", exist_ok=True)
+        print("Certbot configuration created. Certificates will be automatically generated on startup.")
+    else:
+        print("HAProxy configuration created. Please add your SSL certificates to haproxy/certs/server.pem")

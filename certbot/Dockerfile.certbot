@@ -1,0 +1,28 @@
+FROM certbot/certbot:latest
+
+# Install required packages
+USER root
+RUN apk add --no-cache \
+    curl \
+    docker-cli \
+    python3 \
+    bash
+
+# Create required directories
+RUN mkdir -p /var/www/certbot /opt
+
+# Copy scripts
+COPY --chmod=755 renew-certs.sh /opt/renew-certs.sh
+COPY --chmod=755 deploy-hook.sh /opt/deploy-hook.sh
+COPY --chmod=755 serve-http.sh /opt/serve-http.sh
+
+# Verify scripts exist and are executable
+RUN for script in renew-certs.sh deploy-hook.sh serve-http.sh; do \
+        if [ ! -x "/opt/$script" ]; then \
+            echo "Error: /opt/$script is missing or not executable" >&2; \
+            exit 1; \
+        fi; \
+    done
+
+# Set entrypoint
+ENTRYPOINT ["/bin/bash", "/opt/renew-certs.sh"] 
