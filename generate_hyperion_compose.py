@@ -49,6 +49,248 @@ def setup_elasticsearch_config(node_count):
         with open(f"{node_config_dir}/elasticsearch.yml", "w") as f:
             f.write(es_config)
 
+def setup_rabbitmq_cluster_config(instance_count):
+    """Setup RabbitMQ cluster configuration files"""
+    if instance_count == 1:
+        print("Single RabbitMQ instance, using standard configuration.")
+        return
+    
+    # Create cluster configuration
+    cluster_config = """# rabbitmq-cluster.conf
+# Memory and resource management
+vm_memory_high_watermark.relative = 0.4
+vm_memory_high_watermark_paging_ratio = 0.5
+disk_free_limit.relative = 1.0
+
+# Cluster settings
+cluster_formation.peer_discovery_backend = rabbit_peer_discovery_classic_config
+"""
+    
+    # Add cluster nodes configuration
+    for i in range(1, instance_count + 1):
+        cluster_config += f"cluster_formation.classic_config.nodes.{i} = rabbit@rabbitmq-{i}\n"
+    
+    cluster_config += """
+# Queue performance tuning for cluster
+queue_index_embed_msgs_below = 4096
+num_acceptors.tcp = 8
+num_acceptors.ssl = 0
+
+# Message handling
+channel_max = 2000
+max_message_size = 134217728
+
+# Persistence and sync for cluster
+queue_master_locator = client-local
+mirroring_sync_batch_size = 4096
+
+# Cluster-specific settings
+cluster_partition_handling = autoheal
+cluster_keepalive_interval = 10000
+
+# Resource allocation
+reverse_dns_lookups = false
+
+# Management plugin settings
+management.rates_mode = none
+
+# Sample retention policies for management plugin
+management.sample_retention_policies.global.minute = 5
+management.sample_retention_policies.global.hour = 60
+management.sample_retention_policies.global.day = 1200
+management.sample_retention_policies.basic.minute = 5
+management.sample_retention_policies.basic.hour = 60
+management.sample_retention_policies.detailed.10 = 5
+
+# Logging
+log.file.level = warning
+
+# TCP tuning for cluster
+tcp_listen_options.backlog = 256
+tcp_listen_options.nodelay = true
+tcp_listen_options.keepalive = true
+
+# Network partition handling
+net_ticktime = 60
+heartbeat = 60
+
+# Performance tuning for high-throughput
+vm_memory_high_watermark_paging_ratio = 0.5
+queue_master_locator = min-masters
+
+# Connection limits for cluster
+connection_max = 10000
+"""
+    
+    # Write cluster configuration
+    with open("rabbitmq/Deployment/rabbitmq-cluster.conf", "w") as f:
+        f.write(cluster_config)
+    
+    # Create dynamic nginx configuration for load balancer
+    nginx_config = """events {
+    worker_connections 1024;
+}
+
+http {
+    upstream rabbitmq_management {
+        # Load balance across all RabbitMQ nodes
+"""
+    
+    for i in range(1, instance_count + 1):
+        nginx_config += f"        server rabbitmq-{i}:15672;\n"
+    
+    nginx_config += """    }
+
+    upstream rabbitmq_amqp {
+        # Load balance AMQP connections
+"""
+    
+    for i in range(1, instance_count + 1):
+        nginx_config += f"        server rabbitmq-{i}:5672;\n"
+    
+    nginx_config += """    }
+
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=rabbitmq:10m rate=10r/s;
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "healthy\\n";
+            add_header Content-Type text/plain;
+        }
+
+        # RabbitMQ Management UI
+        location / {
+            limit_req zone=rabbitmq burst=20 nodelay;
+            
+            proxy_pass http://rabbitmq_management;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # WebSocket support for management UI
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            
+            # Timeouts
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+        }
+
+        # RabbitMQ Prometheus metrics
+        location /metrics {
+            proxy_pass http://rabbitmq_management/metrics;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
+"""
+    
+    # Write nginx configuration
+    with open("rabbitmq/Deployment/nginx.conf", "w") as f:
+        f.write(nginx_config)
+    
+    print(f"Created RabbitMQ cluster configuration for {instance_count} instances.")
+
+def setup_rabbitmq_haproxy_config(instance_count, user, password):
+    """Generate HAProxy configuration for RabbitMQ cluster"""
+    import os
+    
+    # Create rabbitmq/Deployment directory if it doesn't exist
+    os.makedirs("rabbitmq/Deployment", exist_ok=True)
+    
+    # Generate server entries for all RabbitMQ instances
+    server_entries = ""
+    for i in range(1, instance_count + 1):
+        server_entries += f"    server rabbitmq-{i} rabbitmq-{i}:5672 check inter 2s rise 2 fall 3\n"
+    
+    # Generate HTTP server entries for management API
+    http_server_entries = ""
+    for i in range(1, instance_count + 1):
+        http_server_entries += f"    server rabbitmq-{i} rabbitmq-{i}:15672 check inter 2s rise 2 fall 3\n"
+    
+    # Generate Prometheus server entries
+    prometheus_server_entries = ""
+    for i in range(1, instance_count + 1):
+        prometheus_server_entries += f"    server rabbitmq-{i} rabbitmq-{i}:15692 check inter 2s rise 2 fall 3\n"
+    
+    # Create base64 encoded credentials for HTTP health check
+    import base64
+    credentials = f"{user}:{password}"
+    encoded_credentials = base64.b64encode(credentials.encode()).decode()
+    
+    # Generate HAProxy configuration
+    haproxy_cfg = f"""global
+    log /dev/log local0
+    maxconn 4096
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    log     global
+    mode    tcp
+    option  tcplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+
+# AMQP Load Balancer for Hyperion
+frontend amqp_frontend
+    bind *:5672
+    mode tcp
+    default_backend amqp_backend
+
+backend amqp_backend
+    mode tcp
+    balance roundrobin
+    option tcp-check
+    tcp-check connect port 5672
+{server_entries}
+# HTTP Management Load Balancer
+frontend http_frontend
+    bind *:15672
+    mode http
+    default_backend http_backend
+
+backend http_backend
+    mode http
+    balance roundrobin
+    option httpchk GET /api/overview
+    http-check send meth GET uri /api/overview ver HTTP/1.1 hdr Host rabbitmq-loadbalancer hdr Authorization "Basic {encoded_credentials}" hdr Connection close
+    http-check expect status 200
+{http_server_entries}
+# Prometheus Metrics Load Balancer
+frontend prometheus_frontend
+    bind *:15692
+    mode http
+    default_backend prometheus_backend
+
+backend prometheus_backend
+    mode http
+    balance roundrobin
+    option httpchk GET /metrics
+    http-check expect status 200
+{prometheus_server_entries}"""
+    
+    # Write the haproxy.cfg file
+    with open("rabbitmq/Deployment/haproxy.cfg", "w") as f:
+        f.write(haproxy_cfg)
+    
+    print(f"Generated RabbitMQ HAProxy configuration for {instance_count} instances")
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -73,6 +315,10 @@ request_hyperion_cert = os.getenv("REQUEST_HYPERION_CERT", "true").lower() == "t
 
 # Load the number of nodes and other configurations from the environment
 amount_of_nodes = int(os.getenv("AMOUNT_OF_NODE_INSTANCES", 1))
+# Add RabbitMQ clustering configuration
+amount_of_rabbitmq_instances = int(os.getenv("AMOUNT_OF_RABBITMQ_INSTANCES", 1))
+rabbitmq_cluster_name = os.getenv("RABBITMQ_CLUSTER_NAME", "hyperion-cluster")
+rabbitmq_erlang_cookie = os.getenv("RABBITMQ_ERLANG_COOKIE", "SWQOKODSQALRPCLNMEQG")
 elasticsearch_version = os.getenv("ELASTICSEARCH_VERSION", "8.17.0")
 elastic_min_mem = os.getenv("ELASTIC_MIN_MEM", "15g")
 elastic_max_mem = os.getenv("ELASTIC_MAX_MEM", "15g")
@@ -136,6 +382,159 @@ def generate_es_exporters(node_count):
         exporters += exporter
     return exporters
 
+def generate_rabbitmq_cluster_services(instance_count, cluster_name, erlang_cookie, user, password, vhost, memory, cpus):
+    """Generate RabbitMQ cluster services configuration"""
+    if instance_count == 1:
+        # Single instance - no clustering needed
+        return f"""
+  rabbitmq:
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER={user}
+      - RABBITMQ_DEFAULT_PASS={password}
+      - RABBITMQ_DEFAULT_VHOST={vhost}
+      - RABBITMQ_ERLANG_COOKIE={erlang_cookie}
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
+        rabbitmq-server  
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+      - "127.0.0.1:15692:15692"
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {memory}
+          cpus: "{cpus}"
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+"""
+    
+    # Multi-instance cluster
+    cluster_services = ""
+    for i in range(1, instance_count + 1):
+        node_name = f"rabbitmq-{i}"
+        is_first_node = i == 1
+        
+        # Generate cluster join command for non-first nodes
+        cluster_join_cmd = ""
+        if not is_first_node:
+            cluster_join_cmd = f"""
+        # Join cluster with first node
+        sleep 30 &&
+        rabbitmqctl stop_app &&
+        rabbitmqctl reset &&
+        rabbitmqctl join_cluster rabbit@rabbitmq-1 &&
+        rabbitmqctl start_app &&"""
+        
+        service = f"""
+  {node_name}:
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
+    container_name: {node_name}
+    hostname: {node_name}
+    environment:
+      - RABBITMQ_DEFAULT_USER={user}
+      - RABBITMQ_DEFAULT_PASS={password}
+      - RABBITMQ_DEFAULT_VHOST={vhost}
+      - RABBITMQ_ERLANG_COOKIE={erlang_cookie}
+      - RABBITMQ_NODENAME=rabbit@{node_name}
+      - RABBITMQ_USE_LONGNAME=false
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
+        rabbitmq-server &
+        sleep 10 &&{cluster_join_cmd}
+        wait
+    ports:
+      - "127.0.0.1:{5671 + i}:5672"
+      - "127.0.0.1:{15671 + i}:15672"
+      - "127.0.0.1:{15691 + i}:15692"
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: {memory}
+          cpus: "{cpus}"
+    volumes:
+      - rabbitmqdata{i}:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq-cluster.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5"""
+        
+        # Only add depends_on for non-first nodes
+        if not is_first_node:
+            service += f"""
+    depends_on:
+      - rabbitmq-1"""
+        
+        service += "\n"
+        cluster_services += service
+    
+    # Add RabbitMQ load balancer for management interface
+    # Generate depends_on list for all RabbitMQ instances
+    depends_on_list = ""
+    for i in range(1, instance_count + 1):
+        depends_on_list += f"      - rabbitmq-{i}\n"
+    
+    cluster_services += f"""
+  rabbitmq-loadbalancer:
+    image: haproxy:2.8-alpine
+    container_name: rabbitmq-loadbalancer
+    ports:
+      - "0.0.0.0:5675:5672"
+      - "0.0.0.0:15675:15672"
+      - "0.0.0.0:15695:15692"
+    volumes:
+      - ./rabbitmq/Deployment/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - esnet
+    depends_on:
+{depends_on_list.rstrip()}
+    healthcheck:
+      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+"""
+    
+    return cluster_services
+
+def generate_rabbitmq_volumes(instance_count):
+    """Generate RabbitMQ volumes for cluster"""
+    if instance_count == 1:
+        return "  rabbitmqdata:"
+    
+    volumes = ""
+    for i in range(1, instance_count + 1):
+        volumes += f"\n  rabbitmqdata{i}:"
+    return volumes
+
 # Define monitoring services separately
 monitoring_services = f"""
   prometheus:
@@ -198,6 +597,48 @@ monitoring_services = f"""
     depends_on:
       - redis      
 """
+
+def generate_rabbitmq_exporters(instance_count):
+    """Generate RabbitMQ exporters for cluster monitoring"""
+    if not monitoring_enabled:
+        return ""
+    
+    if instance_count == 1:
+        return """
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: rabbitmq-exporter
+    environment:
+      - RABBIT_URL=http://rabbitmq:15672
+      - RABBIT_USER=rabbitmquser
+      - RABBIT_PASSWORD=rabbitmqpass
+    ports:
+      - "9419:9419"
+    networks:
+      - esnet
+    depends_on:
+      - rabbitmq
+"""
+    
+    exporters = ""
+    for i in range(1, instance_count + 1):
+        exporter = f"""
+  rabbitmq-exporter-{i}:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: rabbitmq-exporter-{i}
+    environment:
+      - RABBIT_URL=http://rabbitmq-{i}:15672
+      - RABBIT_USER={rabbitmq_user}
+      - RABBIT_PASSWORD={rabbitmq_pass}
+    ports:
+      - "{9419 + i - 1}:9419"
+    networks:
+      - esnet
+    depends_on:
+      - rabbitmq-{i}
+"""
+        exporters += exporter
+    return exporters
 
 # Base fixed Docker Compose services
 base_compose = f"""
@@ -265,43 +706,6 @@ services:
       timeout: 5s
       retries: 3
 
-  rabbitmq:
-    build:
-      context: ./rabbitmq/Deployment
-      dockerfile: Dockerfile.rabbitmq  
-    container_name: rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER={rabbitmq_user}
-      - RABBITMQ_DEFAULT_PASS={rabbitmq_pass}
-      - RABBITMQ_DEFAULT_VHOST={rabbitmq_vhost}
-    command:
-      - sh
-      - -c
-      - |
-        rabbitmq-plugins disable --all &&
-        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
-        rabbitmq-server  
-    ports:
-      - "127.0.0.1:5672:5672"
-      - "127.0.0.1:15672:15672"
-      - "127.0.0.1:15692:15692"
-    networks:
-      - esnet
-    deploy:
-      resources:
-        limits:
-          memory: {rabbitmq_memory}
-          cpus: "{rabbitmq_cpus}"
-    volumes:
-      - rabbitmqdata:/var/lib/rabbitmq
-      - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   hyperion:
     container_name: hyperion
     tty: true
@@ -328,7 +732,7 @@ services:
       - hyperiondata:/app/hyperiondata
     depends_on:
       - redis
-      - rabbitmq
+      - {"rabbitmq-1" if amount_of_rabbitmq_instances > 1 else "rabbitmq"}
       - es1
 
   node:
@@ -355,19 +759,6 @@ services:
     volumes:
       - node:/app/node/data
 """
-
-# Remove redis-exporter from base_compose since we've moved it to monitoring_services
-base_compose = base_compose.replace("""  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: redis-exporter
-    environment:
-      - REDIS_ADDR=redis:6379
-    ports:
-      - "9121:9121"
-    networks:
-      - esnet
-    depends_on:
-      - redis      """, "")
 
 # Template for Elasticsearch nodes
 node_template = """
@@ -413,17 +804,17 @@ node_template = """
 """
 
 # Base for volumes and networks
-volumes_and_networks = """
+volumes_and_networks = f"""
 volumes:
   grafana-data:
   redisdata:
-  rabbitmqdata:
+{generate_rabbitmq_volumes(amount_of_rabbitmq_instances)}
   hyperiondata:
   node:
   certbot-etc:
   certbot-var:
   certbot-www:
-{volumes}
+{{volumes}}
 
 networks:
   esnet:
@@ -513,9 +904,9 @@ haproxy_service = f"""
 """
 
 # Combine everything
-all_services = base_compose + services
+all_services = base_compose + generate_rabbitmq_cluster_services(amount_of_rabbitmq_instances, rabbitmq_cluster_name, rabbitmq_erlang_cookie, rabbitmq_user, rabbitmq_pass, rabbitmq_vhost, rabbitmq_memory, rabbitmq_cpus) + services
 if monitoring_enabled:
-    all_services += monitoring_services + generate_es_exporters(amount_of_nodes)
+    all_services += monitoring_services + generate_es_exporters(amount_of_nodes) + generate_rabbitmq_exporters(amount_of_rabbitmq_instances)
 if proxy_enabled:
     all_services += haproxy_service
     if certbot_enabled:
@@ -530,7 +921,7 @@ final_compose = all_services + volumes_section
 with open("docker-compose-generated-hyperion.yml", "w") as f:
     f.write(final_compose)
 
-print(f"Generated docker-compose-generated-hyperion.yml with {amount_of_nodes} Elasticsearch nodes.")
+print(f"Generated docker-compose-generated-hyperion.yml with {amount_of_nodes} Elasticsearch nodes and {amount_of_rabbitmq_instances} RabbitMQ instances.")
 
 def update_prometheus_config(node_count):
     if not monitoring_enabled:
@@ -580,21 +971,81 @@ def update_prometheus_config(node_count):
     with open("prometheus/hyperion/prometheus.yml", "w") as f:
         f.writelines(new_config)
 
+def update_prometheus_rabbitmq_config(rabbitmq_count):
+    """Update Prometheus configuration to include RabbitMQ cluster monitoring"""
+    if not monitoring_enabled:
+        return
+        
+    # Read the existing prometheus.yml
+    with open("prometheus/hyperion/prometheus.yml", "r") as f:
+        config = f.readlines()
+
+    # Generate RabbitMQ exporter job configuration
+    if rabbitmq_count == 1:
+        new_rabbitmq_job = """  - job_name: rabbitmq_exporter
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['rabbitmq-exporter:9419']\n"""
+    else:
+        targets = [f'rabbitmq-exporter-{i}:9419' for i in range(1, rabbitmq_count + 1)]
+        new_rabbitmq_job = f"""  - job_name: rabbitmq_exporter
+    scrape_interval: 15s
+    static_configs:
+      - targets: {targets}\n"""
+
+    # Remove any existing rabbitmq_exporter job
+    new_config = []
+    skip_section = False
+    for line in config:
+        if 'job_name: rabbitmq_exporter' in line:
+            skip_section = True
+            continue
+        if skip_section:
+            if line.strip().startswith('- job_name:'):
+                skip_section = False
+            else:
+                continue
+        if not skip_section:
+            new_config.append(line)
+
+    # Find the position to insert the new job (before the last job)
+    insert_position = None
+    for i, line in enumerate(new_config):
+        if 'job_name: nodeos_custom_exporter' in line:
+            insert_position = i
+            break
+
+    if insert_position is not None:
+        # Insert the new rabbitmq_exporter job configuration
+        new_config.insert(insert_position, new_rabbitmq_job)
+    else:
+        # If we didn't find the position, append to the end of scrape_configs
+        new_config.append(new_rabbitmq_job)
+
+    # Write the updated configuration back to the file
+    with open("prometheus/hyperion/prometheus.yml", "w") as f:
+        f.writelines(new_config)
+
 # Add this line at the end of the script, after writing the docker-compose file
 update_prometheus_config(amount_of_nodes)
+update_prometheus_rabbitmq_config(amount_of_rabbitmq_instances)
 if monitoring_enabled:
-    print(f"Updated prometheus.yml with {amount_of_nodes} elasticsearch-exporter targets.")
+    print(f"Updated prometheus.yml with {amount_of_nodes} elasticsearch-exporter targets and {amount_of_rabbitmq_instances} rabbitmq-exporter targets.")
 else:
     print("Monitoring disabled, prometheus.yml not updated.")
 
-# Keep the rest of your existing script, but add this before generating the docker-compose file:
+# Call the setup function at the end of your script
 setup_elasticsearch_config(amount_of_nodes)
-
-# Update the Kibana configuration in base_compose to use the dynamic ES URI
-base_compose = base_compose.replace(
-    '"ELASTICSEARCH_URL=http://es1:9200"',
-    f'"ELASTICSEARCH_URL=http://es1:9200"'
-)
+setup_rabbitmq_cluster_config(amount_of_rabbitmq_instances)
+setup_rabbitmq_haproxy_config(amount_of_rabbitmq_instances, rabbitmq_user, rabbitmq_pass)
+if proxy_enabled:
+    setup_haproxy_config()
+    if certbot_enabled:
+        # Create certbot directory structure
+        os.makedirs("certbot", exist_ok=True)
+        print("Certbot configuration created. Certificates will be automatically generated on startup.")
+    else:
+        print("HAProxy configuration created. Please add your SSL certificates to haproxy/certs/server.pem")
 
 def setup_haproxy_config():
     import os
@@ -724,14 +1175,3 @@ resolvers docker
     # Write the haproxy.cfg file
     with open("haproxy/haproxy.cfg", "w") as f:
         f.write(haproxy_cfg)
-
-# Call the setup function at the end of your script
-setup_elasticsearch_config(amount_of_nodes)
-if proxy_enabled:
-    setup_haproxy_config()
-    if certbot_enabled:
-        # Create certbot directory structure
-        os.makedirs("certbot", exist_ok=True)
-        print("Certbot configuration created. Certificates will be automatically generated on startup.")
-    else:
-        print("HAProxy configuration created. Please add your SSL certificates to haproxy/certs/server.pem")

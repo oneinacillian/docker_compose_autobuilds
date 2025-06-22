@@ -63,43 +63,6 @@ services:
       timeout: 5s
       retries: 3
 
-  rabbitmq:
-    build:
-      context: ./rabbitmq/Deployment
-      dockerfile: Dockerfile.rabbitmq  
-    container_name: rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=rabbitmquser
-      - RABBITMQ_DEFAULT_PASS=rabbitmqpass
-      - RABBITMQ_DEFAULT_VHOST=hyperion
-    command:
-      - sh
-      - -c
-      - |
-        rabbitmq-plugins disable --all &&
-        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
-        rabbitmq-server  
-    ports:
-      - "127.0.0.1:5672:5672"
-      - "127.0.0.1:15672:15672"
-      - "127.0.0.1:15692:15692"
-    networks:
-      - esnet
-    deploy:
-      resources:
-        limits:
-          memory: 2g
-          cpus: "1"
-    volumes:
-      - rabbitmqdata:/var/lib/rabbitmq
-      - ./rabbitmq/Deployment/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   hyperion:
     container_name: hyperion
     tty: true
@@ -126,7 +89,7 @@ services:
       - hyperiondata:/app/hyperiondata
     depends_on:
       - redis
-      - rabbitmq
+      - rabbitmq-1
       - es1
 
   node:
@@ -152,6 +115,172 @@ services:
           cpus: "4"
     volumes:
       - node:/app/node/data
+
+  rabbitmq-1:
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
+    container_name: rabbitmq-1
+    hostname: rabbitmq-1
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmquser
+      - RABBITMQ_DEFAULT_PASS=rabbitmqpass
+      - RABBITMQ_DEFAULT_VHOST=hyperion
+      - RABBITMQ_ERLANG_COOKIE=SWQOKODSQALRPCLNMEQG
+      - RABBITMQ_NODENAME=rabbit@rabbitmq-1
+      - RABBITMQ_USE_LONGNAME=false
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
+        rabbitmq-server &
+        sleep 10 &&
+        wait
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+      - "127.0.0.1:15692:15692"
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1"
+    volumes:
+      - rabbitmqdata1:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq-cluster.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq-2:
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
+    container_name: rabbitmq-2
+    hostname: rabbitmq-2
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmquser
+      - RABBITMQ_DEFAULT_PASS=rabbitmqpass
+      - RABBITMQ_DEFAULT_VHOST=hyperion
+      - RABBITMQ_ERLANG_COOKIE=SWQOKODSQALRPCLNMEQG
+      - RABBITMQ_NODENAME=rabbit@rabbitmq-2
+      - RABBITMQ_USE_LONGNAME=false
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
+        rabbitmq-server &
+        sleep 10 &&
+        # Join cluster with first node
+        sleep 30 &&
+        rabbitmqctl stop_app &&
+        rabbitmqctl reset &&
+        rabbitmqctl join_cluster rabbit@rabbitmq-1 &&
+        rabbitmqctl start_app &&
+        wait
+    ports:
+      - "127.0.0.1:5673:5672"
+      - "127.0.0.1:15673:15672"
+      - "127.0.0.1:15693:15692"
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1"
+    volumes:
+      - rabbitmqdata2:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq-cluster.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - rabbitmq-1
+
+  rabbitmq-3:
+    build:
+      context: ./rabbitmq/Deployment
+      dockerfile: Dockerfile.rabbitmq  
+    container_name: rabbitmq-3
+    hostname: rabbitmq-3
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmquser
+      - RABBITMQ_DEFAULT_PASS=rabbitmqpass
+      - RABBITMQ_DEFAULT_VHOST=hyperion
+      - RABBITMQ_ERLANG_COOKIE=SWQOKODSQALRPCLNMEQG
+      - RABBITMQ_NODENAME=rabbit@rabbitmq-3
+      - RABBITMQ_USE_LONGNAME=false
+    command:
+      - sh
+      - -c
+      - |
+        rabbitmq-plugins disable --all &&
+        rabbitmq-plugins enable rabbitmq_management rabbitmq_prometheus &&
+        rabbitmq-server &
+        sleep 10 &&
+        # Join cluster with first node
+        sleep 30 &&
+        rabbitmqctl stop_app &&
+        rabbitmqctl reset &&
+        rabbitmqctl join_cluster rabbit@rabbitmq-1 &&
+        rabbitmqctl start_app &&
+        wait
+    ports:
+      - "127.0.0.1:5674:5672"
+      - "127.0.0.1:15674:15672"
+      - "127.0.0.1:15694:15692"
+    networks:
+      - esnet
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1"
+    volumes:
+      - rabbitmqdata3:/var/lib/rabbitmq
+      - ./rabbitmq/Deployment/rabbitmq-cluster.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/Deployment/rabbitmq-env.conf:/etc/rabbitmq/rabbitmq-env.conf   
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - rabbitmq-1
+
+  rabbitmq-loadbalancer:
+    image: haproxy:2.8-alpine
+    container_name: rabbitmq-loadbalancer
+    ports:
+      - "0.0.0.0:5675:5672"
+      - "0.0.0.0:15675:15672"
+      - "0.0.0.0:15695:15692"
+    volumes:
+      - ./rabbitmq/Deployment/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - esnet
+    depends_on:
+      - rabbitmq-1
+      - rabbitmq-2
+      - rabbitmq-3
+    healthcheck:
+      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   es1:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
@@ -193,109 +322,13 @@ services:
       retries: 5
       start_period: 60s
 
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/hyperion/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-    networks:
-      - esnet
-    deploy:
-      resources:
-        limits:
-          memory: 2g
-          cpus: "1"
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3030:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-    volumes:
-      - ./grafana/provisioning/hyperion:/etc/grafana/provisioning
-      - grafana-data:/var/lib/grafana
-    networks:
-      - esnet
-    deploy:
-      resources:
-        limits:
-          memory: 1g
-          cpus: "1"
-
-  nodeos-custom-exporter:
-    build:
-      context: ./custom-nodeos-exporter
-      dockerfile: Dockerfile
-    container_name: nodeos-custom-exporter
-    ports:
-      - "8000:8000"
-    depends_on:
-      - node
-    networks:
-      - esnet
-
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: redis-exporter
-    environment:
-      - REDIS_ADDR=redis:6379
-    ports:
-      - "9121:9121"
-    networks:
-      - esnet
-    depends_on:
-      - redis      
-
-  elasticsearch-exporter-1:
-    image: quay.io/prometheuscommunity/elasticsearch-exporter:latest
-    container_name: elasticsearch-exporter-1
-    command:
-      - '--es.uri=http://es1:9200'
-    ports:
-      - "9114:9114"
-    depends_on:
-      - es1
-    networks:
-      - esnet
-
-  haproxy:
-    image: haproxy:2.8-alpine
-    container_name: haproxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - ./haproxy/certs:/etc/haproxy/certs:ro
-      - certbot-www:/var/www/certbot:ro
-    depends_on:
-      - hyperion
-      - kibana
-      - grafana
-    networks:
-      - esnet
-    deploy:
-      resources:
-        limits:
-          memory: 1g
-          cpus: "1"
-    healthcheck:
-      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 volumes:
   grafana-data:
   redisdata:
-  rabbitmqdata:
+
+  rabbitmqdata1:
+  rabbitmqdata2:
+  rabbitmqdata3:
   hyperiondata:
   node:
   certbot-etc:
