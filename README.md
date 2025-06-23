@@ -651,3 +651,23 @@ If you need to manually manage certificates:
    ```bash
    docker compose restart haproxy
    ```
+
+### RabbitMQ Cluster for High Availability
+
+This deployment now supports a multi-node RabbitMQ cluster, providing significant improvements in reliability and performance for message queuing, which is critical for Hyperion's data processing pipeline.
+
+![RabbitMQ Cluster Overview](assets/rabbitmq_cluster_overview.png)
+
+**Key Benefits:**
+
+-   **High Availability**: If one RabbitMQ node fails, the other nodes in the cluster remain operational, ensuring the message queuing service is still available. Mirrored queues replicate messages across all nodes, preventing data loss.
+-   **Load Balancing**: An integrated HAProxy load balancer distributes AMQP connections and management API traffic across all available nodes. This prevents any single node from becoming a bottleneck and improves overall throughput.
+-   **Scalability**: The cluster can be easily scaled by adjusting the `AMOUNT_OF_RABBITMQ_INSTANCES` variable in your environment file, allowing the messaging infrastructure to grow with your needs.
+
+### Prometheus Configuration
+
+The `prometheus.yml` configuration is automatically updated to include all Elasticsearch exporter targets when you run the generation script:
+```
+elasticsearch/config/es{n}/prometheus.yml
+```
+Where `{n}` represents the node number (e.g., es1, es2, etc.)
