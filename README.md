@@ -2,6 +2,32 @@
 
 > Quick deployment solution for Hyperion and Atomic services with monitoring capabilities.
 
+---
+
+## 🚀 K3s/Kubernetes Deployment Quickstart
+
+To deploy each core service (ArgoCD, Rancher, Harbor, Hyperion Stack, etc.) on your K3s cluster, simply run the provided `deploy.sh` script in each service's directory:
+
+```sh
+# Example for ArgoCD
+cd k3s-deploy/argo-deploy && ./deploy.sh
+
+# Example for Rancher
+cd k3s-deploy/rancher-deploy && ./deploy.sh
+
+# Example for Harbor
+cd k3s-deploy/harbor-deploy && ./deploy.sh
+
+# Example for Hyperion Stack (see below)
+cd k3s-deploy/hyperion-stack-deploy
+```
+
+For full Hyperion stack deployment on Kubernetes (including Elasticsearch, Redis, RabbitMQ, Kibana, and Hyperion), see the detailed guide in:
+
+[hyperion-stack-deploy/README.md](k3s-deploy/hyperion-stack-deploy/README.md)
+
+---
+
 ## 🚀 Quick Start
 
 1. Clone and navigate to the project
