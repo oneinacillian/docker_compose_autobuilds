@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hyperion
+  labels:
+    app: hyperion
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hyperion
+  template:
+    metadata:
+      labels:
+        app: hyperion
+    spec:
+      containers:
+        - name: hyperion
+          image: harbor-test.oiac.io/hyperion/hyperion:latest
+          ports:
+            - containerPort: 7000
+            - containerPort: 1234
+          env:
+            - name: HYPERION_ENVIRONMENT
+              value: "testnet"
+            - name: HYPERION_LAUNCH_ON_STARTUP
+              value: "false"
+            - name: HYPERION_VERSION
+              value: "3.5.0"
+            - name: RABBITMQ_DEFAULT_USER
+              value: "rabbitmquser"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "rabbitmqpass"
+          resources:
+            limits:
+              memory: "8Gi"
+              cpu: "2"
+            requests:
+              memory: "4Gi"
+              cpu: "1"
+          volumeMounts:
+            - name: hyperiondata
+              mountPath: /app/hyperiondata
+            - name: config
+              mountPath: /app/connections.json
+              subPath: connections.json
+            - name: config
+              mountPath: /app/chains/wax.config.json
+              subPath: wax.config.json
+      volumes:
+        - name: hyperiondata
+          persistentVolumeClaim:
+            claimName: hyperiondata-pvc
+        - name: config
+          configMap:
+            name: hyperion-config 

@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          ports:
+            - containerPort: 6379
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+          command:
+            - redis-server
+            - --appendonly
+            - "yes"
+            - --appendfsync
+            - "everysec"
+            - --maxmemory
+            - "6gb"
+            - --maxmemory-policy
+            - "allkeys-lru"
+            - --save
+            - "900"
+            - "1"
+            - --save
+            - "300"
+            - "10"
+            - --tcp-keepalive
+            - "60"
+            - --io-threads
+            - "2"
+            - --io-threads-do-reads
+            - "yes"
+            - --activedefrag
+            - "yes"
+            - --active-defrag-threshold-lower
+            - "10"
+            - --active-defrag-threshold-upper
+            - "100"
+            - --active-defrag-cycle-min
+            - "25"
+            - --active-defrag-cycle-max
+            - "75"
+            - --lazyfree-lazy-eviction
+            - "yes"
+            - --lazyfree-lazy-expire
+            - "yes"
+            - --lazyfree-lazy-server-del
+            - "yes"
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-pvc 
