@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/oneinacillian/docker_compose_autobuilds
-    targetRevision: testapp
+    targetRevision: main
     path: k3s-deploy/hyperion-stack-deploy/redis-app
     directory:
       recurse: true
