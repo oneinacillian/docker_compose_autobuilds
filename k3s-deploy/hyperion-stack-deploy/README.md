@@ -31,11 +31,49 @@ Deploy a full Hyperion stack—including Elasticsearch, Redis, RabbitMQ, Kibana,
 ## 2. Build and Push Hyperion Images
 
 1. **Build your Hyperion images** using the Dockerfile in `hyperion-stack-deploy/hyperion-app/build`.
+   ```sh
+    Sending build context to Docker daemon  3.072kB
+    Step 1/10 : FROM node:20
+    20: Pulling from library/node
+    Digest: sha256:dc2a18571982a2d76e61e5fa823c65013f6ee2c58a24d764db4e757c688b01b0
+    Status: Image is up to date for node:20
+    ---> d05db19b2fc9
+    Step 2/10 : RUN mkdir -p /app
+    ---> Using cache
+    ---> 60ceaf8c8dd3
+    Step 3/10 : WORKDIR /app
+    ---> Using cache
+    ---> eee2c8c7b9bf
+    Step 4/10 : RUN npm install -g pm2
+    ---> Using cache
+    ---> 3a2905423f13
+    Step 5/10 : RUN apt-get update && apt-get install -y git vim
+    ---> Using cache
+    ---> 3e6f8a77cf2b
+    Step 6/10 : RUN git clone -b v3.3.10-1 https://github.com/eosrio/hyperion-history-api.git /app
+    ---> Using cache
+    ---> 38d7bd404191
+    Step 7/10 : COPY ./entrypoint.sh .
+    ---> Using cache
+    ---> 4a98a72687d0
+    Step 8/10 : RUN npm install
+    ---> Using cache
+    ---> 60b386675425
+    Step 9/10 : RUN chmod +x ./entrypoint.sh
+    ---> Using cache
+    ---> 5ad0fe93b55f
+    Step 10/10 : ENTRYPOINT ["./entrypoint.sh"]
+    ---> Using cache
+    ---> 8692ecf6d04d
+    Successfully built 8692ecf6d04d
+    Successfully tagged test:test
+   ```
 2. **Create a project in Harbor** named `hyperion` and make it public (or set up credentials for private).
 3. **Tag and push your image** to Harbor:
 
    ```sh
-   docker tag <your-image> harbor-test.oiac.io/hyperion/hyperion:latest
+   docker login harbor-test.oiac.io
+   docker tag test:test harbor-test.oiac.io/hyperion/hyperion:latest
    docker push harbor-test.oiac.io/hyperion/hyperion:latest
    ```
 
