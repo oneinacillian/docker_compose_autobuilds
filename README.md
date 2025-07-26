@@ -26,6 +26,9 @@ For full Hyperion stack deployment on Kubernetes (including Elasticsearch, Redis
 
 [hyperion-stack-deploy/README.md](k3s-deploy/hyperion-stack-deploy/README.md)
 
+For K3s cluster setup and HAProxy configuration, see:
+- [K3s Cluster Deployment](k3s-deploy/k3s-cluster-deploy/README.md)
+
 For service-specific deployment details and screenshots, see:
 - [ArgoCD Deployment](k3s-deploy/argo-deploy/README.md)
 - [Rancher Deployment](k3s-deploy/rancher-deploy/README.md)
