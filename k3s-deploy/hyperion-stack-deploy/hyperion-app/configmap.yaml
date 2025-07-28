@@ -90,8 +90,8 @@ data:
         "indexer": {
           "enabled": true,
           "node_max_old_space_size": 4096,
-          "start_on": 358624649,
-          "stop_on": 358674649,
+          "start_on": 384461750,
+          "stop_on": 384481750,
           "rewrite": true,
           "purge_queues": false,
           "live_reader": false,
