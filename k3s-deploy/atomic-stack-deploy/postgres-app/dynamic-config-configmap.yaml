@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-dynamic-config
+  labels:
+    app: postgres
+data:
+  # Dynamic Memory Configuration Parameters
+  # These values control how PostgreSQL calculates memory settings at runtime
+  # Based on the logic from init-db.sh
+  
+  # Memory allocation percentages (as integers)
+  shared_buffers_percentage: "25"
+  maintenance_work_mem_percentage: "5"
+  effective_cache_size_percentage: "50"
+  
+  # Work memory calculation multiplier
+  work_mem_multiplier: "256"
+  
+  # Connection and performance settings
+  max_connections: "100"
+  
+  # Extension settings
+  enable_pg_trgm: "true"
+  
+  # Performance tuning parameters
+  checkpoint_completion_target: "0.9"
+  random_page_cost: "1.1"
+  effective_io_concurrency: "200"
+  
+  # Logging configuration
+  log_statement: "none"
+  log_min_duration_statement: "1000"
+  log_checkpoints: "on"
+  log_connections: "on"
+  log_disconnections: "on"
+  
+  # Autovacuum settings
+  autovacuum: "on"
+  autovacuum_max_workers: "3"
+  
+  # Statistics and planning
+  default_statistics_target: "100"
+  checkpoint_segments: "32"
+  
+  # Custom Atomic app settings
+  max_locks_per_transaction: "64"
+  
+  # WAL settings
+  wal_buffers: "16MB"

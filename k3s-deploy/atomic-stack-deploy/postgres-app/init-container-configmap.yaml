@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-container-script
+  labels:
+    app: postgres
+data:
+  init-container.sh: |
+    #!/bin/bash
+    set -e
+    
+    # Init Container Script for PostgreSQL Dynamic Configuration
+    # This script reads the dynamic-config ConfigMap and sets environment variables
+    # that will be used by the init-db.sh script
+    
+    echo "PostgreSQL Init Container: Reading dynamic configuration..."
+    
+    # Wait for the dynamic-config ConfigMap to be available
+    echo "Waiting for dynamic-config ConfigMap..."
+    while ! kubectl get configmap postgresql-dynamic-config -n postgres >/dev/null 2>&1; do
+        echo "ConfigMap not ready, waiting..."
+        sleep 2
+    done
+    
+    echo "Dynamic config ConfigMap found, reading values..."
+    
+    # Read values from the dynamic-config ConfigMap
+    SHARED_BUFFERS_PERCENTAGE=$(kubectl get configmap postgresql-dynamic-config -n postgres -o jsonpath='{.data.shared_buffers_percentage}')
+    MAINTENANCE_WORK_MEM_PERCENTAGE=$(kubectl get configmap postgresql-dynamic-config -n postgres -o jsonpath='{.data.maintenance_work_mem_percentage}')
+    EFFECTIVE_CACHE_SIZE_PERCENTAGE=$(kubectl get configmap postgresql-dynamic-config -n postgres -o jsonpath='{.data.effective_cache_size_percentage}')
+    WORK_MEM_MULTIPLIER=$(kubectl get configmap postgresql-dynamic-config -n postgres -o jsonpath='{.data.work_mem_multiplier}')
+    MAX_CONNECTIONS=$(kubectl get configmap postgresql-dynamic-config -n postgres -o jsonpath='{.data.max_connections}')
+    ENABLE_PG_TRGM=$(kubectl get configmap postgresql-dynamic-config -n postgres -o jsonpath='{.data.enable_pg_trgm}')
+    
+    # Set default values if not found
+    SHARED_BUFFERS_PERCENTAGE="${SHARED_BUFFERS_PERCENTAGE:-25}"
+    MAINTENANCE_WORK_MEM_PERCENTAGE="${MAINTENANCE_WORK_MEM_PERCENTAGE:-5}"
+    EFFECTIVE_CACHE_SIZE_PERCENTAGE="${EFFECTIVE_CACHE_SIZE_PERCENTAGE:-50}"
+    WORK_MEM_MULTIPLIER="${WORK_MEM_MULTIPLIER:-256}"
+    MAX_CONNECTIONS="${MAX_CONNECTIONS:-100}"
+    ENABLE_PG_TRGM="${ENABLE_PG_TRGM:-true}"
+    
+    echo "Configuration values:"
+    echo "  SHARED_BUFFERS_PERCENTAGE: ${SHARED_BUFFERS_PERCENTAGE}"
+    echo "  MAINTENANCE_WORK_MEM_PERCENTAGE: ${MAINTENANCE_WORK_MEM_PERCENTAGE}"
+    echo "  EFFECTIVE_CACHE_SIZE_PERCENTAGE: ${EFFECTIVE_CACHE_SIZE_PERCENTAGE}"
+    echo "  WORK_MEM_MULTIPLIER: ${WORK_MEM_MULTIPLIER}"
+    echo "  MAX_CONNECTIONS: ${MAX_CONNECTIONS}"
+    echo "  ENABLE_PG_TRGM: ${ENABLE_PG_TRGM}"
+    
+    # Create a file with environment variables for the main container
+    cat > /tmp/postgres-env.sh << EOF
+    export SHARED_BUFFERS_PERCENTAGE="${SHARED_BUFFERS_PERCENTAGE}"
+    export MAINTENANCE_WORK_MEM_PERCENTAGE="${MAINTENANCE_WORK_MEM_PERCENTAGE}"
+    export EFFECTIVE_CACHE_SIZE_PERCENTAGE="${EFFECTIVE_CACHE_SIZE_PERCENTAGE}"
+    export WORK_MEM_MULTIPLIER="${WORK_MEM_MULTIPLIER}"
+    export MAX_CONNECTIONS="${MAX_CONNECTIONS}"
+    export ENABLE_PG_TRGM="${ENABLE_PG_TRGM}"
+    EOF
+    
+    echo "Environment variables written to /tmp/postgres-env.sh"
+    echo "Init container completed successfully!"

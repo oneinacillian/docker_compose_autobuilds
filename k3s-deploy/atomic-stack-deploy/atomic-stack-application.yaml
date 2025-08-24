@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: atomic-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/oneinacillian/docker_compose_autobuilds
+    targetRevision: main
+    path: k3s-deploy/atomic-stack-deploy
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: atomic-stack
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  syncWave: "0"

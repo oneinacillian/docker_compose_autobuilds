@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atomic
+  labels:
+    app: atomic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atomic
+  template:
+    metadata:
+      labels:
+        app: atomic
+    spec:
+      containers:
+        - name: atomic
+          image: atomic:latest
+          ports:
+            - containerPort: 9000
+              name: http
+            - containerPort: 9001
+              name: reader
+            - containerPort: 9010
+              name: metrics
+          env:
+            - name: ATOMIC_ENVIRONMENT
+              value: "testnet"
+            - name: ATOMIC_LAUNCH_ON_STARTUP
+              value: "true"
+            - name: NODE_ENV
+              value: "production"
+          resources:
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: atomic-data
+              mountPath: /app/atomic
+            - name: atomic-config
+              mountPath: /app/eosio-contract-api/config/connections.config.json
+              subPath: connections.config.json
+            - name: atomic-config
+              mountPath: /app/eosio-contract-api/config/server.config.json
+              subPath: server.config.json
+            - name: atomic-config
+              mountPath: /app/eosio-contract-api/config/readers.config.json
+              subPath: readers.config.json
+            - name: atomic-config
+              mountPath: /app/eosio-contract-api/ecosystems.config.json
+              subPath: ecosystems.config.json
+            - name: atomic-logs
+              mountPath: /app/logs
+      volumes:
+        - name: atomic-data
+          persistentVolumeClaim:
+            claimName: atomic-pvc
+        - name: atomic-config
+          configMap:
+            name: atomic-config
+        - name: atomic-logs
+          emptyDir: {}

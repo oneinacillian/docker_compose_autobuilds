@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-gateway
+  labels:
+    app: spring-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spring-gateway
+  template:
+    metadata:
+      labels:
+        app: spring-gateway
+    spec:
+      containers:
+      - name: spring-gateway
+        image: openjdk:17-jdk-slim
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: ELASTICSEARCH_HOST
+          value: "es1"
+        - name: ELASTICSEARCH_PORT
+          value: "9200"
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: HYPERION_HOST
+          value: "hyperion"
+        - name: HYPERION_PORT
+          value: "7000"
+        - name: KIBANA_HOST
+          value: "kibana"
+        - name: KIBANA_PORT
+          value: "5601"
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: gateway-config
+          mountPath: /app/config
+          readOnly: true
+      volumes:
+      - name: gateway-config
+        configMap:
+          name: gateway-config 

@@ -1,0 +1,12 @@
+resources:
+  - deployment.yaml
+  - service.yaml
+  - pvc.yaml
+  - configmap.yaml
+  - postgresql-configmap.yaml
+  - pg-hba-configmap.yaml
+  - dynamic-config-configmap.yaml
+  - serviceaccount.yaml
+
+# Helper scripts (not deployed to cluster)
+# - update-config.sh

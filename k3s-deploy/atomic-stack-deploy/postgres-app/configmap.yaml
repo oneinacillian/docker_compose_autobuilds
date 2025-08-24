@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+data:
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+    
+    # PostgreSQL Dynamic Configuration Initialization Script
+    # This script calculates and sets PostgreSQL parameters based on system resources
+    # and configuration from the dynamic-config ConfigMap
+    
+    # Perform all actions as $POSTGRES_USER
+    export PGUSER="$POSTGRES_USER"
+    export POSTGRES_DB="atomic"
+    
+    echo "Initializing atomic database with dynamic configuration..."
+    
+    # Get dynamic configuration values from environment (set by init container)
+    SHARED_BUFFERS_PERCENTAGE="${SHARED_BUFFERS_PERCENTAGE:-25}"
+    MAINTENANCE_WORK_MEM_PERCENTAGE="${MAINTENANCE_WORK_MEM_PERCENTAGE:-5}"
+    EFFECTIVE_CACHE_SIZE_PERCENTAGE="${EFFECTIVE_CACHE_SIZE_PERCENTAGE:-50}"
+    WORK_MEM_MULTIPLIER="${WORK_MEM_MULTIPLIER:-256}"
+    MAX_CONNECTIONS="${MAX_CONNECTIONS:-100}"
+    ENABLE_PG_TRGM="${ENABLE_PG_TRGM:-true}"
+    
+    echo "Using configuration:"
+    echo "  Shared buffers: ${SHARED_BUFFERS_PERCENTAGE}% of total memory"
+    echo "  Maintenance work mem: ${MAINTENANCE_WORK_MEM_PERCENTAGE}% of total memory"
+    echo "  Effective cache size: ${EFFECTIVE_CACHE_SIZE_PERCENTAGE}% of total memory"
+    echo "  Work mem multiplier: ${WORK_MEM_MULTIPLIER}"
+    echo "  Max connections: ${MAX_CONNECTIONS}"
+    echo "  Enable pg_trgm: ${ENABLE_PG_TRGM}"
+    
+    # Calculate memory settings based on system resources
+    total_memory_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    echo "Total system memory: ${total_memory_kb} kB"
+    
+    # Calculate shared_buffers (default: 25% of total memory)
+    shared_buffers_kb=$((total_memory_kb * SHARED_BUFFERS_PERCENTAGE / 100))
+    echo "Calculated shared_buffers: ${shared_buffers_kb} kB"
+    
+    # Calculate work_mem based on max_connections
+    work_mem_kb=$((total_memory_kb / MAX_CONNECTIONS * WORK_MEM_MULTIPLIER / 1000))
+    echo "Calculated work_mem: ${work_mem_kb} kB"
+    
+    # Calculate maintenance_work_mem (default: 5% of total memory)
+    maintenance_work_mem_kb=$((total_memory_kb * MAINTENANCE_WORK_MEM_PERCENTAGE / 100))
+    echo "Calculated maintenance_work_mem: ${maintenance_work_mem_kb} kB"
+    
+    # Calculate effective_cache_size (default: 50% of total memory)
+    effective_cache_size_kb=$((total_memory_kb * EFFECTIVE_CACHE_SIZE_PERCENTAGE / 100))
+    echo "Calculated effective_cache_size: ${effective_cache_size_kb} kB"
+    
+    # Apply dynamic configuration to postgresql.conf
+    echo "Applying dynamic configuration to postgresql.conf..."
+    
+    # Set shared_buffers
+    sed -i "s/^#*shared_buffers = .*/shared_buffers = ${shared_buffers_kb}kB/" "$PGDATA/postgresql.conf"
+    
+    # Set work_mem
+    sed -i "s/^#*work_mem = .*/work_mem = ${work_mem_kb}kB/" "$PGDATA/postgresql.conf"
+    
+    # Set maintenance_work_mem
+    sed -i "s/^#*maintenance_work_mem = .*/maintenance_work_mem = ${maintenance_work_mem_kb}kB/" "$PGDATA/postgresql.conf"
+    
+    # Set effective_cache_size
+    sed -i "s/^#*effective_cache_size = .*/effective_cache_size = ${effective_cache_size_kb}kB/" "$PGDATA/postgresql.conf"
+    
+    # Set max_connections
+    sed -i "s/^#*max_connections = .*/max_connections = ${MAX_CONNECTIONS}/" "$PGDATA/postgresql.conf"
+    
+    echo "Dynamic configuration applied successfully!"
+    
+    # Create pg_trgm extension if enabled
+    if [ "$ENABLE_PG_TRGM" = "true" ]; then
+        echo "Creating pg_trgm extension..."
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+            CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        EOSQL
+        echo "pg_trgm extension created successfully!"
+    fi
+    
+    echo "Database initialization completed with dynamic configuration."

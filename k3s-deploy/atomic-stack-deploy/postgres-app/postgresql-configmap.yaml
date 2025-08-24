@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  labels:
+    app: postgres
+data:
+  postgresql.conf: |
+    # PostgreSQL Configuration
+    # This file is mounted as /etc/postgresql/postgresql.conf
+    
+    # Connection Settings
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 100
+    
+    # Memory Settings (dynamically calculated from init-db.sh logic)
+    # These can be overridden by setting specific values
+    # shared_buffers = 25% of total memory (calculated at runtime)
+    # work_mem = (total_memory / max_connections * 256 / 1000) kB (calculated at runtime)
+    # maintenance_work_mem = 5% of total memory (calculated at runtime)
+    # effective_cache_size = 50% of total memory (calculated at runtime)
+    
+    # Default memory settings (used if dynamic calculation fails)
+    shared_buffers = 256MB
+    effective_cache_size = 1GB
+    work_mem = 4MB
+    maintenance_work_mem = 64MB
+    
+    # WAL Settings
+    wal_buffers = 16MB
+    checkpoint_completion_target = 0.9
+    
+    # Query Planner
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    
+    # Logging
+    log_statement = 'none'
+    log_min_duration_statement = 1000
+    log_checkpoints = on
+    log_connections = on
+    log_disconnections = on
+    
+    # Autovacuum
+    autovacuum = on
+    autovacuum_max_workers = 3
+    
+    # Performance Tuning
+    default_statistics_target = 100
+    checkpoint_segments = 32
+    
+    # Custom settings for Atomic app
+    max_locks_per_transaction = 64
+    shared_preload_libraries = 'pg_trgm'
+    
+    # Allow custom settings to be overridden
+    include_dir = '/etc/postgresql/conf.d'
+    
+    # Dynamic memory calculation settings (from init-db.sh)
+    # These will be calculated at runtime by the init script
+    # shared_buffers_percentage = 25
+    # work_mem_multiplier = 256
+    # maintenance_work_mem_percentage = 5
+    # effective_cache_size_percentage = 50
