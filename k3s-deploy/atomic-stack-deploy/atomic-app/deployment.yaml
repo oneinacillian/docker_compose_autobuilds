@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: atomic
-          image: atomic:latest
+          image: harbor-test.oiac.io/atomic/atomic
           ports:
             - containerPort: 9000
               name: http
@@ -66,9 +66,9 @@ spec:
             - name: atomic-config
               mountPath: /app/eosio-contract-api/config/readers.config.json
               subPath: readers.config.json
-            - name: atomic-config
-              mountPath: /app/eosio-contract-api/ecosystems.config.json
-              subPath: ecosystems.config.json
+            # - name: atomic-config
+            #   mountPath: /app/eosio-contract-api/ecosystems.config.json
+            #   subPath: ecosystems.config.json
             - name: atomic-logs
               mountPath: /app/logs
       volumes:

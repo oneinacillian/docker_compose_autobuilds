@@ -16,8 +16,8 @@ wait_for_service() {
 }
 
 # Wait for required services
-wait_for_service redis 6379
-wait_for_service postgres 5432
+wait_for_service redis.redis.svc.cluster.local 6379
+wait_for_service postgres.postgres.svc.cluster.local 5432
 
 echo "All required services are available. Starting Atomic application..."
 

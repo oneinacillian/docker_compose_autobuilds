@@ -9,19 +9,19 @@ data:
   connections.config.json: |
     {
       "postgres": {
-        "host": "postgres",
+        "host": "postgres.postgres.svc.cluster.local",
         "port": 5432,
         "user": "waxuser",
         "password": "waxuserpass",
         "database": "atomic"
       },
       "redis": {
-        "host": "redis",
+        "host": "redis.redis.svc.cluster.local",
         "port": 6379
       },
       "chain": {
         "name": "wax",
-        "chain_id": "1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4",
+        "chain_id": "f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12",
         "http": "http://172.168.40.50:28888",
         "ship": "ws://172.168.40.50:29876"
       }
@@ -69,7 +69,7 @@ data:
         "name": "atomic-1",
         "server_addr": "0.0.0.0",
         "server_port": 9001,
-        "start_block": 64000000,
+        "start_block": 35795440,
         "stop_block": 0,
         "irreversible_only": false,
         "ship_prefetch_blocks": 50,
@@ -92,22 +92,22 @@ data:
     ]
 
   # PM2 ecosystem configuration
-  ecosystems.config.json: |
-    {
-      "apps": [
-        {
-          "name": "eosio-contract-api-filler",
-          "script": "dist/filler.js",
-          "instances": 1,
-          "exec_mode": "fork",
-          "env": {
-            "NODE_ENV": "production",
-            "NODE_OPTIONS": "--max-old-space-size=4096"
-          },
-          "error_file": "/app/logs/filler-error.log",
-          "out_file": "/app/logs/filler-out.log",
-          "log_file": "/app/logs/filler-combined.log",
-          "time": true
-        }
-      ]
-    }
+  # ecosystems.config.json: |
+  #   {
+  #     "apps": [
+  #       {
+  #         "name": "eosio-contract-api-filler",
+  #         "script": "dist/filler.js",
+  #         "instances": 1,
+  #         "exec_mode": "fork",
+  #         "env": {
+  #           "NODE_ENV": "production",
+  #           "NODE_OPTIONS": "--max-old-space-size=4096"
+  #         },
+  #         "error_file": "/app/logs/filler-error.log",
+  #         "out_file": "/app/logs/filler-out.log",
+  #         "log_file": "/app/logs/filler-combined.log",
+  #         "time": true
+  #       }
+  #     ]
+  #   }
