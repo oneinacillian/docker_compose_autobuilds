@@ -48,14 +48,11 @@ data:
     
     # Performance Tuning
     default_statistics_target = 100
-    checkpoint_segments = 32
+    max_wal_size = 2GB
     
     # Custom settings for Atomic app
     max_locks_per_transaction = 64
     shared_preload_libraries = 'pg_trgm'
-    
-    # Allow custom settings to be overridden
-    include_dir = '/etc/postgresql/conf.d'
     
     # Dynamic memory calculation settings (from init-db.sh)
     # These will be calculated at runtime by the init script

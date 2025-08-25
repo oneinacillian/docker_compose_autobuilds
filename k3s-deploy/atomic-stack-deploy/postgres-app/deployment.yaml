@@ -14,10 +14,6 @@ spec:
       labels:
         app: postgres
     spec:
-      securityContext:
-        runAsUser: 999
-        runAsGroup: 999
-        fsGroup: 999
       containers:
         - name: postgres
           image: postgres:14
@@ -30,23 +26,6 @@ spec:
               value: "waxuserpass"
             - name: POSTGRES_DB
               value: "atomic"
-            - name: POSTGRES_INITDB_ARGS
-              value: "--data-checksums"
-            - name: PGDATA
-              value: "/var/lib/postgresql/data/pgdata"
-            # Dynamic configuration environment variables (with defaults)
-            - name: SHARED_BUFFERS_PERCENTAGE
-              value: "25"
-            - name: MAINTENANCE_WORK_MEM_PERCENTAGE
-              value: "5"
-            - name: EFFECTIVE_CACHE_SIZE_PERCENTAGE
-              value: "50"
-            - name: WORK_MEM_MULTIPLIER
-              value: "256"
-            - name: MAX_CONNECTIONS
-              value: "100"
-            - name: ENABLE_PG_TRGM
-              value: "true"
           resources:
             limits:
               memory: "2Gi"
@@ -81,30 +60,18 @@ spec:
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
-            - name: postgresql-config
-              mountPath: /etc/postgresql/postgresql.conf
-              subPath: postgresql.conf
-            - name: postgresql-pg-hba
-              mountPath: /etc/postgresql/pg_hba.conf
-              subPath: pg_hba.conf
             - name: init-script
               mountPath: /docker-entrypoint-initdb.d
-          command:
-            - "postgres"
-            - "-c"
-            - "config_file=/etc/postgresql/postgresql.conf"
-            - "-c"
-            - "hba_file=/etc/postgresql/pg_hba.conf"
+            - name: pg-hba-config
+              mountPath: /etc/postgresql/pg_hba.conf
+              subPath: pg_hba.conf
       volumes:
         - name: postgres-data
           persistentVolumeClaim:
             claimName: postgres-pvc
-        - name: postgresql-config
-          configMap:
-            name: postgresql-config
-        - name: postgresql-pg-hba
-          configMap:
-            name: postgresql-pg-hba
         - name: init-script
           configMap:
             name: postgres-init-script
+        - name: pg-hba-config
+          configMap:
+            name: postgresql-pg-hba
