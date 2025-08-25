@@ -31,3 +31,34 @@ This component deploys a Redis server with:
 ## Usage
 
 The Redis service is accessible within the cluster at `redis:6379`.
+
+## ArgoCD Deployment
+
+This service includes an `application.yaml` file for ArgoCD deployment:
+
+### Application Details
+- **Name**: `atomic-redis`
+- **Namespace**: `redis` (created automatically)
+- **Source**: This repository's `redis-app/` directory
+- **Sync Policy**: Automated with pruning and self-healing
+
+### Deploy via ArgoCD
+1. **Apply the application** to your ArgoCD instance
+2. **ArgoCD will automatically**:
+   - Create the `redis` namespace
+   - Deploy Redis with persistent storage
+   - Monitor and maintain the deployment
+   - Apply any configuration changes
+
+### Manual Deployment (Alternative)
+If not using ArgoCD, you can deploy manually:
+```bash
+kubectl create namespace redis
+kubectl apply -f redis-app/
+```
+
+## Notes
+
+- The service is configured for the `redis` namespace
+- Persistent storage ensures data survives pod restarts
+- Health checks automatically restart unhealthy containers

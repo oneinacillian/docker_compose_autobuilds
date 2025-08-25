@@ -55,8 +55,8 @@ The application now uses **ConfigMaps** instead of hardcoded configuration:
 ## Dependencies
 
 - `local-path` storage class
-- Redis service (`redis:6379`)
-- PostgreSQL service (`postgres:5432`)
+- Redis service (`redis.redis.svc.cluster.local:6379`)
+- PostgreSQL service (`postgres.postgres.svc.cluster.local:5432`)
 
 ## Build Process
 
@@ -98,6 +98,32 @@ kubectl edit configmap atomic-config -n atomic
 kubectl rollout restart deployment/atomic -n atomic
 ```
 
+## ArgoCD Deployment
+
+This service includes an `application.yaml` file for ArgoCD deployment:
+
+### Application Details
+- **Name**: `atomic-app`
+- **Namespace**: `atomic` (created automatically)
+- **Source**: This repository's `atomic-app/` directory
+- **Sync Policy**: Automated with pruning and self-healing
+
+### Deploy via ArgoCD
+1. **Apply the application** to your ArgoCD instance
+2. **ArgoCD will automatically**:
+   - Create the `atomic` namespace
+   - Deploy the Atomic application with ConfigMap configuration
+   - Monitor and maintain the deployment
+   - Apply any configuration changes
+   - Ensure service dependencies are met
+
+### Manual Deployment (Alternative)
+If not using ArgoCD, you can deploy manually:
+```bash
+kubectl create namespace atomic
+kubectl apply -f atomic-app/
+```
+
 ## Notes
 
 - Ensure Redis and PostgreSQL are running before deploying this component
@@ -105,3 +131,7 @@ kubectl rollout restart deployment/atomic -n atomic
 - Configuration changes are applied immediately after pod restart
 - The build directory contains Dockerfile, entrypoint script, and build automation
 - All configuration is now externalized and manageable through GitOps
+- The service is configured for the `atomic` namespace
+- Cross-namespace communication with Redis and PostgreSQL services
+- Persistent storage ensures data survives pod restarts
+- Health checks automatically restart unhealthy containers

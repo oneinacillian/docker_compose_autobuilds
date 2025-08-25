@@ -94,6 +94,46 @@ Each component has its own ArgoCD application for automated deployment:
 - `atomic-postgres`: Deploys PostgreSQL to the `postgres` namespace  
 - `atomic-app`: Deploys the Atomic application to the `atomic` namespace
 
+### Complete Stack Deployment
+
+For deploying the entire stack at once, use the main `atomic-stack-application.yaml`:
+
+- **Name**: `atomic-stack`
+- **Namespace**: `atomic-stack` (created automatically)
+- **Source**: This repository's `atomic-stack-deploy/` directory
+- **Sync Policy**: Automated with pruning and self-healing
+- **Sync Wave**: 0 (deploys all components simultaneously)
+
+### Individual Component Deployment
+
+Each service can also be deployed independently using their respective `application.yaml` files:
+
+1. **Redis**: `redis-app/application.yaml` → `atomic-redis` application
+2. **PostgreSQL**: `postgres-app/application.yaml` → `atomic-postgres` application
+3. **Atomic App**: `atomic-app/application.yaml` → `atomic-app` application
+
+### Deploy via ArgoCD
+1. **Apply the main stack application** to your ArgoCD instance for complete deployment
+2. **Or apply individual applications** for selective deployment
+3. **ArgoCD will automatically**:
+   - Create required namespaces
+   - Deploy all components with proper dependencies
+   - Monitor and maintain deployments
+   - Apply configuration changes
+   - Handle rolling updates and rollbacks
+
+### Manual Deployment (Alternative)
+If not using ArgoCD, you can deploy manually:
+```bash
+# Deploy complete stack
+kubectl apply -f k3s-deploy/atomic-stack-deploy/
+
+# Or deploy individually
+kubectl apply -f redis-app/
+kubectl apply -f postgres-app/
+kubectl apply -f atomic-app/
+```
+
 ## Configuration
 
 ### Environment Variables

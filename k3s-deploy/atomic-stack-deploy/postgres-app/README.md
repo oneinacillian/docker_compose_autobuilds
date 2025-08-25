@@ -167,6 +167,32 @@ enable_pg_trgm: "true"                # Enable text search extension
 
 The PostgreSQL service is accessible within the cluster at `postgres:5432`.
 
+## ArgoCD Deployment
+
+This service includes an `application.yaml` file for ArgoCD deployment:
+
+### Application Details
+- **Name**: `atomic-postgres`
+- **Namespace**: `postgres` (created automatically)
+- **Source**: This repository's `postgres-app/` directory
+- **Sync Policy**: Automated with pruning and self-healing
+
+### Deploy via ArgoCD
+1. **Apply the application** to your ArgoCD instance
+2. **ArgoCD will automatically**:
+   - Create the `postgres` namespace
+   - Deploy PostgreSQL with dynamic configuration
+   - Initialize the database with custom settings
+   - Monitor and maintain the deployment
+   - Apply any configuration changes
+
+### Manual Deployment (Alternative)
+If not using ArgoCD, you can deploy manually:
+```bash
+kubectl create namespace postgres
+kubectl apply -f postgres-app/
+```
+
 ## Troubleshooting
 
 ### **Check Dynamic Configuration**
@@ -210,3 +236,6 @@ kubectl describe configmap postgresql-dynamic-config -n postgres
 - **Complete GitOps integration** for configuration management
 - **Environment-specific** configurations supported
 - **Zero code changes** needed for configuration updates
+- The service is configured for the `postgres` namespace
+- Persistent storage ensures data survives pod restarts
+- Health checks automatically restart unhealthy containers
