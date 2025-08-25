@@ -20,11 +20,18 @@ cd k3s-deploy/harbor-deploy && ./deploy.sh
 
 # Example for Hyperion Stack (see below)
 cd k3s-deploy/hyperion-stack-deploy
+
+# Example for Atomic Stack (see below)
+cd k3s-deploy/atomic-stack-deploy
 ```
 
 For full Hyperion stack deployment on Kubernetes (including Elasticsearch, Redis, RabbitMQ, Kibana, and Hyperion), see the detailed guide in:
 
 [hyperion-stack-deploy/README.md](k3s-deploy/hyperion-stack-deploy/README.md)
+
+For full Atomic stack deployment on Kubernetes (including Redis, PostgreSQL, and Atomic application), see the detailed guide in:
+
+[atomic-stack-deploy/README.md](k3s-deploy/atomic-stack-deploy/README.md)
 
 For K3s cluster setup and HAProxy configuration, see:
 - [K3s Cluster Deployment](k3s-deploy/k3s-cluster-deploy/README.md)
